@@ -3,6 +3,7 @@ import { RelationMappings } from 'objection';
 import { CalculatedOrder } from './calculated_order.model';
 import { OrderLog } from './order_log.model';
 import { OrderType } from './order_type.model';
+import { User } from './user.model';
 
 export class Order extends BaseModel {
   static readonly tableName = 'orders';
@@ -39,6 +40,14 @@ export class Order extends BaseModel {
       relation: BaseModel.HasManyRelation,
       modelClass: OrderLog,
       join: { from: 'orders.id', to: 'order_logs.order_id' },
+    },
+    user: {
+      relation: BaseModel.BelongsToOneRelation,
+      modelClass: User,
+      join: {
+        from: 'orders.user_id',
+        to: 'users.id',
+      },
     },
   };
 }

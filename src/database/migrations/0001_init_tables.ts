@@ -1,6 +1,17 @@
 import { Knex } from 'knex';
 
 export async function up(knex: Knex): Promise<void> {
+  await knex.schema.createTable('users', (t) => {
+    t.uuid('id').primary();
+    t.string('first_name').notNullable();
+    t.string('last_name').notNullable();
+    t.string('email').notNullable().unique();
+    t.string('phone').nullable();
+    t.string('password_hash').notNullable();
+    t.boolean('is_active').defaultTo(true);
+    t.timestamps(true, true);
+  });
+
   await knex.schema.createTable('brands', (t) => {
     t.uuid('id').primary();
     t.string('name').notNullable();
@@ -125,5 +136,6 @@ export async function down(knex: Knex): Promise<void> {
     .dropTableIfExists('addons')
     .dropTableIfExists('meals')
     .dropTableIfExists('order_types')
-    .dropTableIfExists('brands');
+    .dropTableIfExists('brands')
+    .dropTableIfExists('users');
 }
