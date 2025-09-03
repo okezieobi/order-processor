@@ -1,4 +1,6 @@
-export abstract class BaseRepository<T> {
+import { BaseEntity } from '../entities/base.entity';
+
+export abstract class BaseRepository<T extends BaseEntity> {
   abstract create(order: Partial<T>, tx?: unknown): Promise<T>;
   abstract findById(id: string, tx?: unknown): Promise<T | null>;
   abstract update(
