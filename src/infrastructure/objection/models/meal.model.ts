@@ -4,4 +4,5 @@ export class MealModel extends BaseModel {
   name!: string;
   amount!: number;
   brand_id?: string;
+  active?: boolean;
 }
