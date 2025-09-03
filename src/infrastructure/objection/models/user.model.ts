@@ -1,8 +1,8 @@
 import { BaseModel } from './base.model';
 import { RelationMappings } from 'objection';
-import { Order } from './order.model';
+import { OrderModel } from './order.model';
 
-export class User extends BaseModel {
+export class UserModel extends BaseModel {
   static readonly tableName = 'users';
 
   first_name!: string;
@@ -15,7 +15,7 @@ export class User extends BaseModel {
   static readonly relationMappings: RelationMappings = {
     orders: {
       relation: BaseModel.HasManyRelation,
-      modelClass: Order,
+      modelClass: OrderModel,
       join: {
         from: 'users.id',
         to: 'orders.user_id',

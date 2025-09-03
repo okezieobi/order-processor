@@ -1,6 +1,6 @@
 import { BaseModel } from './base.model';
 import { RelationMappings } from 'objection';
-export class CalculatedOrder extends BaseModel {
+export class CalculatedOrderModel extends BaseModel {
   static readonly tableName = 'calculated_orders';
   total_amount!: number;
   delivery_fee!: number;

@@ -1,11 +1,11 @@
 import { BaseModel } from './base.model';
 import { RelationMappings } from 'objection';
-import { CalculatedOrder } from './calculated_order.model';
-import { OrderLog } from './order_log.model';
-import { OrderType } from './order_type.model';
-import { User } from './user.model';
+import { CalculatedOrderModel } from './calculated_order.model';
+import { OrderLogModel } from './order_log.model';
+import { OrderTypeModel } from './order_type.model';
+import { UserModel } from './user.model';
 
-export class Order extends BaseModel {
+export class OrderModel extends BaseModel {
   static readonly tableName = 'orders';
   user_id!: string;
   order_code?: string;
@@ -28,22 +28,22 @@ export class Order extends BaseModel {
   static readonly relationMappings: RelationMappings = {
     calculated_order: {
       relation: BaseModel.BelongsToOneRelation,
-      modelClass: CalculatedOrder,
+      modelClass: CalculatedOrderModel,
       join: { from: 'orders.calculated_order_id', to: 'calculated_orders.id' },
     },
     order_type: {
       relation: BaseModel.BelongsToOneRelation,
-      modelClass: OrderType,
+      modelClass: OrderTypeModel,
       join: { from: 'orders.order_type_id', to: 'order_types.id' },
     },
     logs: {
       relation: BaseModel.HasManyRelation,
-      modelClass: OrderLog,
+      modelClass: OrderLogModel,
       join: { from: 'orders.id', to: 'order_logs.order_id' },
     },
     user: {
       relation: BaseModel.BelongsToOneRelation,
-      modelClass: User,
+      modelClass: UserModel,
       join: {
         from: 'orders.user_id',
         to: 'users.id',
