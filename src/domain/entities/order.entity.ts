@@ -1,11 +1,12 @@
+import { BaseEntity } from './base.entity';
+
 // src/domain/entities/order.entity.ts
 export interface OrderTotalHistoryEntry {
   time: string;
   total_amount: number;
 }
 
-export interface OrderEntity {
-  id: string;
+export interface OrderEntity extends BaseEntity {
   userId: string;
   orderCode?: string;
   calculatedOrderId?: string;
@@ -26,6 +27,4 @@ export interface OrderEntity {
   completedTime?: string;
 
   orderTotalAmountHistory: OrderTotalHistoryEntry[];
-  createdAt?: string;
-  updatedAt?: string;
 }

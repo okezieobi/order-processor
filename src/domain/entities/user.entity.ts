@@ -1,6 +1,7 @@
+import { BaseEntity } from './base.entity';
+
 // src/domain/entities/user.entity.ts
-export interface UserEntity {
-  id: string;
+export interface UserEntity extends BaseEntity {
   firstName: string;
   lastName: string;
   email: string;

@@ -1,7 +1,6 @@
+import { BaseEntity } from './base.entity';
+
 // src/domain/entities/brand.entity.ts
-export interface BrandEntity {
-  id: string;
+export interface BrandEntity extends BaseEntity {
   name: string;
-  createdAt?: string;
-  updatedAt?: string;
 }

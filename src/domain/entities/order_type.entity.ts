@@ -1,7 +1,6 @@
+import { BaseEntity } from './base.entity';
+
 // src/domain/entities/order-type.entity.ts
-export interface OrderTypeEntity {
-  id: string;
+export interface OrderTypeEntity extends BaseEntity {
   name: string;
-  createdAt?: string;
-  updatedAt?: string;
 }

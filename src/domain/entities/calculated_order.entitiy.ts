@@ -1,6 +1,7 @@
+import { BaseEntity } from './base.entity';
+
 // src/domain/entities/calculated-order.entity.ts
-export interface CalculatedOrderEntity {
-  id: string;
+export interface CalculatedOrderEntity extends BaseEntity {
   totalAmount: number;
   freeDelivery: boolean;
   deliveryFee: number;
@@ -9,6 +10,4 @@ export interface CalculatedOrderEntity {
   lat?: string;
   lng?: string;
   pickup: boolean;
-  createdAt?: string;
-  updatedAt?: string;
 }
