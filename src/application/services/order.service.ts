@@ -60,52 +60,9 @@ export class OrderService {
       if (!order) throw new BadRequestException('Order not found');
       const now = new Date().toISOString();
 
-      if (order.cancelled || order.kitchenCancelled)
-        throw new BadRequestException('Order already cancelled');
-      if (action === 'prepare' && !order.kitchenAccepted)
-        throw new BadRequestException('Must accept before prepare');
-      if (action === 'dispatch' && !order.kitchenPrepared)
-        throw new BadRequestException('Must prepare before dispatch');
-      if (action === 'complete' && !order.kitchenDispatched)
-        throw new BadRequestException('Must dispatch before complete');
+      this.validateOrderAction(order, action);
 
-      const patch: Partial<OrderEntity> = {};
-      let logMsg = '';
-
-      switch (action) {
-        case 'accept':
-          if (order.kitchenAccepted)
-            throw new BadRequestException('Already accepted');
-          patch.kitchenAccepted = true;
-          patch.kitchenVerifiedTime = now;
-          logMsg = 'Order accepted by kitchen';
-          break;
-        case 'prepare':
-          if (order.kitchenPrepared)
-            throw new BadRequestException('Already prepared');
-          patch.kitchenPrepared = true;
-          patch.kitchenCompletedTime = now;
-          logMsg = 'Order completed by kitchen';
-          break;
-        case 'dispatch':
-          if (order.kitchenDispatched)
-            throw new BadRequestException('Already dispatched');
-          patch.kitchenDispatched = true;
-          patch.kitchenDispatchedTime = now;
-          logMsg = 'Order dispatched by front desk';
-          break;
-        case 'complete':
-          if (order.completed)
-            throw new BadRequestException('Already completed');
-          patch.completed = true;
-          patch.completedTime = now;
-          logMsg = 'Trip completed by rider';
-          break;
-        case 'cancel':
-          patch.cancelled = true;
-          logMsg = 'Order cancelled';
-          break;
-      }
+      const { patch, logMsg } = this.getOrderPatchAndLog(order, action, now);
 
       if (
         ['accept', 'prepare', 'dispatch', 'complete'].includes(action) &&
@@ -126,5 +83,61 @@ export class OrderService {
 
     if (updated) await this.events.emitUpdated(updated);
     return updated;
+  }
+
+  private validateOrderAction(order: OrderEntity, action: OrderAction) {
+    if (order.cancelled || order.kitchenCancelled)
+      throw new BadRequestException('Order already cancelled');
+    if (action === 'prepare' && !order.kitchenAccepted)
+      throw new BadRequestException('Must accept before prepare');
+    if (action === 'dispatch' && !order.kitchenPrepared)
+      throw new BadRequestException('Must prepare before dispatch');
+    if (action === 'complete' && !order.kitchenDispatched)
+      throw new BadRequestException('Must dispatch before complete');
+  }
+
+  private getOrderPatchAndLog(
+    order: OrderEntity,
+    action: OrderAction,
+    now: string,
+  ) {
+    const patch: Partial<OrderEntity> = {};
+    let logMsg = '';
+
+    switch (action) {
+      case 'accept':
+        if (order.kitchenAccepted)
+          throw new BadRequestException('Already accepted');
+        patch.kitchenAccepted = true;
+        patch.kitchenVerifiedTime = now;
+        logMsg = 'Order accepted by kitchen';
+        break;
+      case 'prepare':
+        if (order.kitchenPrepared)
+          throw new BadRequestException('Already prepared');
+        patch.kitchenPrepared = true;
+        patch.kitchenCompletedTime = now;
+        logMsg = 'Order completed by kitchen';
+        break;
+      case 'dispatch':
+        if (order.kitchenDispatched)
+          throw new BadRequestException('Already dispatched');
+        patch.kitchenDispatched = true;
+        patch.kitchenDispatchedTime = now;
+        logMsg = 'Order dispatched by front desk';
+        break;
+      case 'complete':
+        if (order.completed) throw new BadRequestException('Already completed');
+        patch.completed = true;
+        patch.completedTime = now;
+        logMsg = 'Trip completed by rider';
+        break;
+      case 'cancel':
+        patch.cancelled = true;
+        logMsg = 'Order cancelled';
+        break;
+    }
+
+    return { patch, logMsg };
   }
 }
