@@ -23,7 +23,7 @@ export class OrderModel extends BaseModel {
   kitchen_completed_time?: string;
   kitchen_verified_time?: string;
   completed_time?: string;
-  order_total_amount_history?: any[];
+  order_total_amount_history!: { time: string; total_amount: number }[];
 
   static readonly relationMappings: RelationMappings = {
     calculated_order: {
