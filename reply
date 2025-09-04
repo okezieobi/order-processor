@@ -1,0 +1,988 @@
+# Overview
+
+You asked for a full refactor of the original NestJS + Objection.js + Knex solution into a domain-driven, ORM-agnostic structure while still meeting the exact test requirements: PostgreSQL, Objection.js models, CRUD endpoints for all entities, DTOs and validation (class-validator + Joi), request logging middleware, and an OrderService.processOrder method that validates status transitions, computes totals (including addons), updates the order, and logs changes.
+
+This gives you clean separation (domain/application/infrastructure/interfaces), zero Objection type leakage in your services, and a codebase that’s easy to reason about, test, and show off.
+
+---
+
+# Project structure
+
+```
+src/
+  app.module.ts
+  main.ts
+
+  common/
+    filters/http-exception.filter.ts
+    middleware/request-logger.middleware.ts
+    pipes/joi-validation.pipe.ts
+    auth/roles.guard.ts
+
+  domain/
+    entities/
+      order.entity.ts
+      order-log.entity.ts
+      calculated-order.entity.ts
+      meal.entity.ts
+      addon.entity.ts
+      brand.entity.ts
+      order-type.entity.ts
+      user.entity.ts
+    repositories/
+      order.repository.ts
+      order-log.repository.ts
+      calculated-order.repository.ts
+      meal.repository.ts
+      addon.repository.ts
+      brand.repository.ts
+      order-type.repository.ts
+      user.repository.ts
+    ports/
+      calculated-order-pricing.port.ts
+      unit-of-work.port.ts
+      order-events.port.ts
+
+  application/
+    services/
+      order.service.ts
+      brand.service.ts
+      meal.service.ts
+      addon.service.ts
+      order-type.service.ts
+      calculated-order.service.ts
+      user.service.ts
+
+  infrastructure/
+    database/
+      database.module.ts
+      knex.config.ts
+      migrations/
+        0001_init.ts
+        0002_users.ts
+    objection/
+      models/
+        base.model.ts
+        order.model.ts
+        order-log.model.ts
+        calculated-order.model.ts
+        calculated-order-meal.model.ts
+        calculated-order-meal-addon.model.ts
+        meal.model.ts
+        addon.model.ts
+        brand.model.ts
+        order-type.model.ts
+        user.model.ts
+      mappers/
+        order.mapper.ts
+        brand.mapper.ts
+        meal.mapper.ts
+        addon.mapper.ts
+        order-type.mapper.ts
+        calculated-order.mapper.ts
+        user.mapper.ts
+      repositories/
+        objection-order.repository.ts
+        objection-order-log.repository.ts
+        objection-calculated-order.repository.ts
+        objection-meal.repository.ts
+        objection-addon.repository.ts
+        objection-brand.repository.ts
+        objection-order-type.repository.ts
+        objection-user.repository.ts
+      unit-of-work/
+        objection-uow.ts
+    events/
+      order-events.gateway.ts
+
+  interfaces/
+    http/
+      controllers/
+        order.controller.ts
+        brand.controller.ts
+        meal.controller.ts
+        addon.controller.ts
+        order-type.controller.ts
+        calculated-order.controller.ts
+        user.controller.ts
+      dto/
+        orders/
+          create-order.dto.ts
+          update-order.dto.ts
+          joi-schemas.ts
+```
+
+> Tip: In all “domain/repositories/*.ts” files, import entities with `import type {...}` to avoid circulars and ESLint “acts as any” noise.
+
+---
+
+# Domain layer
+
+## Entities
+
+```ts
+// src/domain/entities/order.entity.ts
+export interface OrderTotalHistoryEntry {
+  time: string;
+  total_amount: number;
+}
+export interface OrderEntity {
+  id: string;
+  userId: string;
+  orderCode?: string;
+  calculatedOrderId?: string;
+  orderTypeId?: string;
+
+  completed: boolean;
+  cancelled: boolean;
+  kitchenCancelled: boolean;
+  kitchenAccepted: boolean;
+  kitchenPrepared: boolean;
+  kitchenDispatched: boolean;
+  riderAssigned: boolean;
+  paid: boolean;
+
+  kitchenDispatchedTime?: string;
+  kitchenCompletedTime?: string;
+  kitchenVerifiedTime?: string;
+  completedTime?: string;
+
+  orderTotalAmountHistory: OrderTotalHistoryEntry[];
+  createdAt?: string;
+  updatedAt?: string;
+}
+```
+
+```ts
+// src/domain/entities/order-log.entity.ts
+export interface OrderLogEntity {
+  id: string;
+  orderId: string;
+  time: string;
+  description: string;
+}
+```
+
+```ts
+// src/domain/entities/calculated-order.entity.ts
+export interface CalculatedOrderEntity {
+  id: string;
+  totalAmount: number;
+  freeDelivery: boolean;
+  deliveryFee: number;
+  serviceCharge: number;
+  addressDetails: Record<string, any>;
+  lat?: string;
+  lng?: string;
+  pickup: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+```
+
+```ts
+// src/domain/entities/meal.entity.ts
+export interface MealEntity {
+  id: string;
+  name: string;
+  active: boolean;
+  brandId?: string;
+  amount: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+```
+
+```ts
+// src/domain/entities/addon.entity.ts
+export interface AddonEntity {
+  id: string;
+  name: string;
+  amount: number;
+  brandId?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+```
+
+```ts
+// src/domain/entities/brand.entity.ts
+export interface BrandEntity {
+  id: string;
+  name: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+```
+
+```ts
+// src/domain/entities/order-type.entity.ts
+export interface OrderTypeEntity {
+  id: string;
+  name: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+```
+
+```ts
+// src/domain/entities/user.entity.ts
+export interface UserEntity {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone?: string;
+  isActive: boolean;
+}
+```
+
+## Repository interfaces
+
+```ts
+// src/domain/repositories/order.repository.ts
+import type { OrderEntity } from '../entities/order.entity';
+
+export abstract class OrderRepository {
+  abstract create(order: Partial<OrderEntity>, tx?: unknown): Promise<OrderEntity>;
+  abstract findById(id: string, tx?: unknown): Promise<OrderEntity | null>;
+  abstract update(id: string, patch: Partial<OrderEntity>, tx?: unknown): Promise<OrderEntity | null>;
+  abstract remove(id: string, tx?: unknown): Promise<void>;
+  abstract page(page: number, limit: number, tx?: unknown): Promise<{ data: OrderEntity[]; total: number }>;
+  abstract addLog(orderId: string, description: string, time: string, tx?: unknown): Promise<void>;
+}
+```
+
+Repeat for others (BrandRepository, MealRepository, AddonRepository, OrderTypeRepository, CalculatedOrderRepository, OrderLogRepository, UserRepository) with the same CRUD signatures returning their respective entities.
+
+## Domain ports
+
+```ts
+// src/domain/ports/calculated-order-pricing.port.ts
+export abstract class CalculatedOrderPricingPort {
+  abstract computeTotal(calculatedOrderId: string): Promise<number>;
+}
+```
+
+```ts
+// src/domain/ports/unit-of-work.port.ts
+export abstract class UnitOfWork {
+  abstract run<T>(work: (tx: unknown) => Promise<T>): Promise<T>;
+}
+```
+
+```ts
+// src/domain/ports/order-events.port.ts
+import type { OrderEntity } from '../entities/order.entity';
+export abstract class OrderEvents {
+  abstract emitUpdated(order: OrderEntity): Promise<void>;
+}
+```
+
+---
+
+# Application layer
+
+## Order service with business logic
+
+```ts
+// src/application/services/order.service.ts
+import { Injectable, BadRequestException } from '@nestjs/common';
+import { OrderRepository } from '../../domain/repositories/order.repository';
+import { CalculatedOrderPricingPort } from '../../domain/ports/calculated-order-pricing.port';
+import { UnitOfWork } from '../../domain/ports/unit-of-work.port';
+import { OrderEvents } from '../../domain/ports/order-events.port';
+import type { OrderEntity } from '../../domain/entities/order.entity';
+
+export type OrderAction = 'accept' | 'prepare' | 'dispatch' | 'complete' | 'cancel';
+
+@Injectable()
+export class OrderService {
+  constructor(
+    private readonly orders: OrderRepository,
+    private readonly pricing: CalculatedOrderPricingPort,
+    private readonly uow: UnitOfWork,
+    private readonly events: OrderEvents,
+  ) {}
+
+  async create(data: Partial<OrderEntity>) {
+    return this.orders.create({
+      completed: false,
+      cancelled: false,
+      kitchenCancelled: false,
+      kitchenAccepted: false,
+      kitchenPrepared: false,
+      kitchenDispatched: false,
+      riderAssigned: false,
+      paid: data.paid ?? false,
+      orderTotalAmountHistory: [],
+      ...data,
+    });
+  }
+
+  findById(id: string) {
+    return this.orders.findById(id);
+  }
+
+  update(id: string, patch: Partial<OrderEntity>) {
+    return this.orders.update(id, patch);
+  }
+
+  async remove(id: string) {
+    await this.orders.remove(id);
+    return { deleted: true };
+  }
+
+  list(page = 1, limit = 20) {
+    return this.orders.page(page, limit);
+  }
+
+  async processOrder(orderId: string, action: OrderAction) {
+    const updated = await this.uow.run<OrderEntity | null>(async (tx) => {
+      const order = await this.orders.findById(orderId, tx);
+      if (!order) throw new BadRequestException('Order not found');
+      const now = new Date().toISOString();
+
+      if (order.cancelled || order.kitchenCancelled) throw new BadRequestException('Order already cancelled');
+      if (action === 'prepare' && !order.kitchenAccepted) throw new BadRequestException('Must accept before prepare');
+      if (action === 'dispatch' && !order.kitchenPrepared) throw new BadRequestException('Must prepare before dispatch');
+      if (action === 'complete' && !order.kitchenDispatched) throw new BadRequestException('Must dispatch before complete');
+
+      const patch: Partial<OrderEntity> = {};
+      let logMsg = '';
+
+      switch (action) {
+        case 'accept':
+          if (order.kitchenAccepted) throw new BadRequestException('Already accepted');
+          patch.kitchenAccepted = true;
+          patch.kitchenVerifiedTime = now;
+          logMsg = 'Order accepted by kitchen';
+          break;
+        case 'prepare':
+          if (order.kitchenPrepared) throw new BadRequestException('Already prepared');
+          patch.kitchenPrepared = true;
+          patch.kitchenCompletedTime = now;
+          logMsg = 'Order completed by kitchen';
+          break;
+        case 'dispatch':
+          if (order.kitchenDispatched) throw new BadRequestException('Already dispatched');
+          patch.kitchenDispatched = true;
+          patch.kitchenDispatchedTime = now;
+          logMsg = 'Order dispatched by front desk';
+          break;
+        case 'complete':
+          if (order.completed) throw new BadRequestException('Already completed');
+          patch.completed = true;
+          patch.completedTime = now;
+          logMsg = 'Trip completed by rider';
+          break;
+        case 'cancel':
+          patch.cancelled = true;
+          logMsg = 'Order cancelled';
+          break;
+      }
+
+      if (['accept', 'prepare', 'dispatch', 'complete'].includes(action) && order.calculatedOrderId) {
+        const total = await this.pricing.computeTotal(order.calculatedOrderId);
+        const history = Array.isArray(order.orderTotalAmountHistory) ? order.orderTotalAmountHistory : [];
+        history.push({ time: now, total_amount: total });
+        patch.orderTotalAmountHistory = history;
+      }
+
+      const saved = await this.orders.update(orderId, patch, tx);
+      await this.orders.addLog(orderId, logMsg, now, tx);
+      return saved;
+    });
+
+    if (updated) await this.events.emitUpdated(updated);
+    return updated;
+  }
+}
+```
+
+## CRUD services for other entities
+
+Use the same thin pattern for BrandService, MealService, AddonService, OrderTypeService, CalculatedOrderService, and UserService:
+
+```ts
+// src/application/services/brand.service.ts
+import { Injectable } from '@nestjs/common';
+import { BrandRepository } from '../../domain/repositories/brand.repository';
+import type { BrandEntity } from '../../domain/entities/brand.entity';
+
+@Injectable()
+export class BrandService {
+  constructor(private readonly repo: BrandRepository) {}
+  create(data: Omit<BrandEntity, 'id'>) { return this.repo.create(data); }
+  findById(id: string) { return this.repo.findById(id); }
+  update(id: string, patch: Partial<BrandEntity>) { return this.repo.update(id, patch); }
+  remove(id: string) { return this.repo.remove(id); }
+  list(page: number, limit: number) { return this.repo.page(page, limit); }
+}
+```
+
+Repeat similarly for Meals, Addons, OrderTypes, CalculatedOrders, and Users.
+
+---
+
+# Infrastructure layer
+
+## Knex and Objection setup
+
+```ts
+// src/infrastructure/database/knex.config.ts
+import knex, { Knex } from 'knex';
+
+export const knexConfig: Knex.Config = {
+  client: 'pg',
+  connection: process.env.DATABASE_URL || {
+    host: process.env.DB_HOST || 'localhost',
+    user: process.env.DB_USER || 'postgres',
+    password: process.env.DB_PASS || 'postgres',
+    database: process.env.DB_NAME || 'nest_orders',
+    port: Number(process.env.DB_PORT || 5432),
+  },
+  pool: { min: 2, max: 10 },
+  migrations: { tableName: 'knex_migrations' },
+};
+
+export const createKnex = () => knex(knexConfig);
+```
+
+```ts
+// src/infrastructure/database/database.module.ts
+import { Global, Module } from '@nestjs/common';
+import { Model } from 'objection';
+import { createKnex } from './knex.config';
+
+@Global()
+@Module({
+  providers: [{
+    provide: 'KNEX',
+    useFactory: () => {
+      const k = createKnex();
+      Model.knex(k);
+      return k;
+    }
+  }],
+  exports: ['KNEX']
+})
+export class DatabaseModule {}
+```
+
+## Migrations (core tables aligned with sample)
+
+Your 0001_init should include brands, order_types, meals, addons, calculated_orders (+ items and addons pivots), orders, order_logs. Add 0002_users for users. This follows the earlier schema we discussed; reuse that migration content.
+
+## Objection models
+
+```ts
+// src/infrastructure/objection/models/base.model.ts
+import { Model } from 'objection';
+export class BaseModel extends Model {
+  id!: string;
+  created_at?: string;
+  updated_at?: string;
+  $beforeInsert() {
+    const now = new Date().toISOString();
+    this.created_at = now;
+    this.updated_at = now;
+  }
+  $beforeUpdate() { this.updated_at = new Date().toISOString(); }
+}
+```
+
+```ts
+// src/infrastructure/objection/models/order.model.ts
+import { BaseModel } from './base.model';
+export class OrderModel extends BaseModel {
+  static tableName = 'orders';
+  user_id!: string;
+  order_code?: string;
+  calculated_order_id?: string;
+  order_type_id?: string;
+
+  completed!: boolean;
+  cancelled!: boolean;
+  kitchen_cancelled!: boolean;
+  kitchen_accepted!: boolean;
+  kitchen_prepared!: boolean;
+  kitchen_dispatched!: boolean;
+  rider_assigned!: boolean;
+  paid!: boolean;
+
+  kitchen_dispatched_time?: string;
+  kitchen_completed_time?: string;
+  kitchen_verified_time?: string;
+  completed_time?: string;
+
+  order_total_amount_history!: { time: string; total_amount: number }[];
+}
+```
+
+Add similar models for OrderLogModel, CalculatedOrderModel, CalculatedOrderMealModel, CalculatedOrderMealAddonModel, MealModel, AddonModel, BrandModel, OrderTypeModel, UserModel.
+
+## Mappers
+
+```ts
+// src/infrastructure/objection/mappers/order.mapper.ts
+import type { OrderEntity } from '../../../domain/entities/order.entity';
+import { OrderModel } from '../models/order.model';
+
+export function toOrderEntity(m: OrderModel): OrderEntity {
+  return {
+    id: m.id,
+    userId: m.user_id,
+    orderCode: m.order_code ?? undefined,
+    calculatedOrderId: m.calculated_order_id ?? undefined,
+    orderTypeId: m.order_type_id ?? undefined,
+    completed: m.completed,
+    cancelled: m.cancelled,
+    kitchenCancelled: m.kitchen_cancelled,
+    kitchenAccepted: m.kitchen_accepted,
+    kitchenPrepared: m.kitchen_prepared,
+    kitchenDispatched: m.kitchen_dispatched,
+    riderAssigned: m.rider_assigned,
+    paid: m.paid,
+    kitchenDispatchedTime: m.kitchen_dispatched_time ?? undefined,
+    kitchenCompletedTime: m.kitchen_completed_time ?? undefined,
+    kitchenVerifiedTime: m.kitchen_verified_time ?? undefined,
+    completedTime: m.completed_time ?? undefined,
+    orderTotalAmountHistory: Array.isArray(m.order_total_amount_history) ? m.order_total_amount_history : [],
+    createdAt: (m as any).created_at,
+    updatedAt: (m as any).updated_at,
+  };
+}
+
+export function fromOrderEntityPatch(p: Partial<OrderEntity>): Partial<OrderModel> {
+  const x: any = {};
+  if (p.userId !== undefined) x.user_id = p.userId;
+  if (p.orderCode !== undefined) x.order_code = p.orderCode;
+  if (p.calculatedOrderId !== undefined) x.calculated_order_id = p.calculatedOrderId;
+  if (p.orderTypeId !== undefined) x.order_type_id = p.orderTypeId;
+
+  if (p.completed !== undefined) x.completed = p.completed;
+  if (p.cancelled !== undefined) x.cancelled = p.cancelled;
+  if (p.kitchenCancelled !== undefined) x.kitchen_cancelled = p.kitchenCancelled;
+  if (p.kitchenAccepted !== undefined) x.kitchen_accepted = p.kitchenAccepted;
+  if (p.kitchenPrepared !== undefined) x.kitchen_prepared = p.kitchenPrepared;
+  if (p.kitchenDispatched !== undefined) x.kitchen_dispatched = p.kitchenDispatched;
+  if (p.riderAssigned !== undefined) x.rider_assigned = p.riderAssigned;
+  if (p.paid !== undefined) x.paid = p.paid;
+
+  if (p.kitchenDispatchedTime !== undefined) x.kitchen_dispatched_time = p.kitchenDispatchedTime;
+  if (p.kitchenCompletedTime !== undefined) x.kitchen_completed_time = p.kitchenCompletedTime;
+  if (p.kitchenVerifiedTime !== undefined) x.kitchen_verified_time = p.kitchenVerifiedTime;
+  if (p.completedTime !== undefined) x.completed_time = p.completedTime;
+
+  if (p.orderTotalAmountHistory !== undefined) x.order_total_amount_history = p.orderTotalAmountHistory;
+  return x;
+}
+```
+
+Add concise mappers for Brand, Meal, Addon, OrderType, CalculatedOrder, User.
+
+## Repository implementations
+
+```ts
+// src/infrastructure/objection/repositories/objection-order.repository.ts
+import { OrderRepository } from '../../../domain/repositories/order.repository';
+import type { OrderEntity } from '../../../domain/entities/order.entity';
+import { OrderModel } from '../models/order.model';
+import { OrderLogModel } from '../models/order-log.model';
+import { toOrderEntity, fromOrderEntityPatch } from '../mappers/order.mapper';
+
+export class ObjectionOrderRepository implements OrderRepository {
+  async create(order: Partial<OrderEntity>, tx?: unknown): Promise<OrderEntity> {
+    const created = await OrderModel.query(tx as any).insert(fromOrderEntityPatch(order));
+    return toOrderEntity(created);
+  }
+  async findById(id: string, tx?: unknown) {
+    const found = await OrderModel.query(tx as any).findById(id);
+    return found ? toOrderEntity(found) : null;
+    }
+  async update(id: string, patch: Partial<OrderEntity>, tx?: unknown) {
+    const updated = await OrderModel.query(tx as any).patchAndFetchById(id, fromOrderEntityPatch(patch));
+    return updated ? toOrderEntity(updated) : null;
+  }
+  async remove(id: string, tx?: unknown) {
+    await OrderModel.query(tx as any).deleteById(id);
+  }
+  async page(page: number, limit: number, tx?: unknown) {
+    const { results, total } = await OrderModel.query(tx as any).page(Math.max(0, page - 1), limit);
+    return { data: results.map(toOrderEntity), total };
+  }
+  async addLog(orderId: string, description: string, time: string, tx?: unknown) {
+    await OrderLogModel.query(tx as any).insert({ order_id: orderId, description, time });
+  }
+}
+```
+
+Add the pricing port implementation:
+
+```ts
+// src/infrastructure/objection/repositories/objection-calculated-order-pricing.port.ts
+import { CalculatedOrderPricingPort } from '../../../domain/ports/calculated-order-pricing.port';
+import { CalculatedOrderMealModel } from '../models/calculated-order-meal.model';
+import { CalculatedOrderMealAddonModel } from '../models/calculated-order-meal-addon.model';
+import { CalculatedOrderModel } from '../models/calculated-order.model';
+
+export class ObjectionCalculatedOrderPricing implements CalculatedOrderPricingPort {
+  async computeTotal(calculatedOrderId: string): Promise<number> {
+    const items = await CalculatedOrderMealModel.query().where({ calculated_order_id: calculatedOrderId });
+    const itemIds = items.map(i => i.id);
+    const addons = itemIds.length
+      ? await CalculatedOrderMealAddonModel.query().whereIn('calculated_order_meal_id', itemIds)
+      : [];
+
+    let subtotal = 0;
+    for (const i of items) {
+      const iAddons = addons.filter(a => a.calculated_order_meal_id === i.id);
+      const addonTotal = iAddons.reduce((acc, a) => acc + a.amount * a.quantity, 0);
+      subtotal += i.amount * i.quantity + addonTotal;
+    }
+
+    const calc = await CalculatedOrderModel.query().findById(calculatedOrderId);
+    const fees = calc ? (calc.free_delivery ? 0 : calc.delivery_fee) + (calc.service_charge || 0) : 0;
+    return subtotal + fees;
+  }
+}
+```
+
+Unit of work and events:
+
+```ts
+// src/infrastructure/objection/unit-of-work/objection-uow.ts
+import { UnitOfWork } from '../../../domain/ports/unit-of-work.port';
+import { Model, transaction } from 'objection';
+
+export class ObjectionUnitOfWork extends UnitOfWork {
+  run<T>(work: (tx: unknown) => Promise<T>): Promise<T> {
+    return transaction(Model.knex(), (trx) => work(trx as unknown));
+  }
+}
+```
+
+```ts
+// src/infrastructure/events/order-events.gateway.ts
+import { OrderEvents } from '../../domain/ports/order-events.port';
+import type { OrderEntity } from '../../domain/entities/order.entity';
+import { WebSocketGateway, WebSocketServer } from '@nestjs/websockets';
+import { Server } from 'socket.io';
+
+@WebSocketGateway({ cors: { origin: '*' } })
+export class OrderGateway extends OrderEvents {
+  @WebSocketServer() server!: Server;
+  async emitUpdated(order: OrderEntity): Promise<void> {
+    this.server.emit('order.updated', order);
+  }
+}
+```
+
+---
+
+# Interfaces: controllers, DTOs, validation
+
+## DTOs (class-validator)
+
+```ts
+// src/interfaces/http/dto/orders/create-order.dto.ts
+import { IsUUID, IsOptional, IsString, IsBoolean } from 'class-validator';
+
+export class CreateOrderDto {
+  @IsUUID() userId!: string;
+  @IsOptional() @IsString() orderCode?: string;
+  @IsOptional() @IsUUID() calculatedOrderId?: string;
+  @IsOptional() @IsUUID() orderTypeId?: string;
+  @IsOptional() @IsBoolean() paid?: boolean;
+}
+```
+
+```ts
+// src/interfaces/http/dto/orders/update-order.dto.ts
+import { PartialType } from '@nestjs/mapped-types';
+import { CreateOrderDto } from './create-order.dto';
+export class UpdateOrderDto extends PartialType(CreateOrderDto) {}
+```
+
+## Joi schema (in addition to class-validator)
+
+```ts
+// src/interfaces/http/dto/orders/joi-schemas.ts
+import Joi from 'joi';
+
+export const createOrderSchema = Joi.object({
+  userId: Joi.string().uuid().required(),
+  orderCode: Joi.string().optional(),
+  calculatedOrderId: Joi.string().uuid().optional(),
+  orderTypeId: Joi.string().uuid().optional(),
+  paid: Joi.boolean().optional(),
+});
+```
+
+## Joi pipe
+
+```ts
+// src/common/pipes/joi-validation.pipe.ts
+import { BadRequestException, Injectable, PipeTransform } from '@nestjs/common';
+import type { Schema } from 'joi';
+
+@Injectable()
+export class JoiValidationPipe implements PipeTransform {
+  constructor(private schema: Schema) {}
+  transform(value: any) {
+    const { error, value: v } = this.schema.validate(value, { abortEarly: false, stripUnknown: true });
+    if (error) throw new BadRequestException(error.details.map(d => d.message).join(', '));
+    return v;
+  }
+}
+```
+
+## Controllers
+
+```ts
+// src/interfaces/http/controllers/order.controller.ts
+import { Controller, Get, Post, Put, Delete, Param, Body, Query, UsePipes } from '@nestjs/common';
+import { OrderService } from '../../../application/services/order.service';
+import { JoiValidationPipe } from '../../../common/pipes/joi-validation.pipe';
+import { createOrderSchema } from '../dto/orders/joi-schemas';
+import { CreateOrderDto } from '../dto/orders/create-order.dto';
+import { UpdateOrderDto } from '../dto/orders/update-order.dto';
+
+@Controller('orders')
+export class OrderController {
+  constructor(private readonly service: OrderService) {}
+
+  @Post()
+  @UsePipes(new JoiValidationPipe(createOrderSchema))
+  create(@Body() dto: CreateOrderDto) { return this.service.create(dto); }
+
+  @Get(':id')
+  findById(@Param('id') id: string) { return this.service.findById(id); }
+
+  @Put(':id')
+  update(@Param('id') id: string, @Body() dto: UpdateOrderDto) { return this.service.update(id, dto); }
+
+  @Delete(':id')
+  remove(@Param('id') id: string) { return this.service.remove(id); }
+
+  @Get()
+  list(@Query('page') page = '1', @Query('limit') limit = '20') {
+    return this.service.list(Number(page), Number(limit));
+  }
+
+  @Post(':id/process')
+  process(@Param('id') id: string, @Query('action') action: 'accept'|'prepare'|'dispatch'|'complete'|'cancel') {
+    return this.service.processOrder(id, action);
+  }
+}
+```
+
+Make similar CRUD controllers for brands, meals, addons, order-types, calculated-orders, and users.
+
+---
+
+# Middleware, exception filter, auth
+
+## Request logging middleware
+
+```ts
+// src/common/middleware/request-logger.middleware.ts
+import { Injectable, NestMiddleware } from '@nestjs/common';
+import { Request, Response, NextFunction } from 'express';
+
+@Injectable()
+export class RequestLoggerMiddleware implements NestMiddleware {
+  use(req: Request, _: Response, next: NextFunction) {
+    console.log(JSON.stringify({
+      method: req.method,
+      url: req.originalUrl,
+      body: req.body,
+      timestamp: new Date().toISOString(),
+    }));
+    next();
+  }
+}
+```
+
+## Global exception filter
+
+```ts
+// src/common/filters/http-exception.filter.ts
+import { ExceptionFilter, Catch, ArgumentsHost, HttpException, HttpStatus } from '@nestjs/common';
+
+@Catch()
+export class HttpExceptionFilter implements ExceptionFilter {
+  catch(exception: any, host: ArgumentsHost) {
+    const ctx = host.switchToHttp();
+    const res = ctx.getResponse();
+    const req = ctx.getRequest();
+    const status = exception instanceof HttpException ? exception.getStatus() : HttpStatus.INTERNAL_SERVER_ERROR;
+    res.status(status).json({
+      statusCode: status,
+      message: exception?.message || 'Internal server error',
+      path: req.url,
+      method: req.method,
+      timestamp: new Date().toISOString(),
+    });
+  }
+}
+```
+
+## Roles guard (authorization example)
+
+```ts
+// src/common/auth/roles.guard.ts
+import { CanActivate, ExecutionContext, ForbiddenException, Injectable } from '@nestjs/common';
+
+@Injectable()
+export class RolesGuard implements CanActivate {
+  constructor(private roles: string[]) {}
+  canActivate(ctx: ExecutionContext) {
+    const req = ctx.switchToHttp().getRequest();
+    const user = req.user; // set by a preceding JWT auth guard
+    if (!user || !this.roles.some(r => user.roles?.includes(r))) {
+      throw new ForbiddenException('Insufficient permissions');
+    }
+    return true;
+  }
+}
+```
+
+---
+
+# Bootstrapping
+
+```ts
+// src/app.module.ts
+import { Module, MiddlewareConsumer } from '@nestjs/common';
+import { DatabaseModule } from './infrastructure/database/database.module';
+import { OrderModule } from './modules/order.module'; // binds tokens to implementations
+import { BrandModule } from './modules/brand.module';
+import { MealModule } from './modules/meal.module';
+import { AddonModule } from './modules/addon.module';
+import { OrderTypeModule } from './modules/order-type.module';
+import { CalculatedOrderModule } from './modules/calculated-order.module';
+import { UserModule } from './modules/user.module';
+import { RequestLoggerMiddleware } from './common/middleware/request-logger.middleware';
+
+@Module({
+  imports: [
+    DatabaseModule,
+    OrderModule,
+    BrandModule,
+    MealModule,
+    AddonModule,
+    OrderTypeModule,
+    CalculatedOrderModule,
+    UserModule,
+  ],
+})
+export class AppModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(RequestLoggerMiddleware).forRoutes('*');
+  }
+}
+```
+
+```ts
+// src/main.ts
+import { NestFactory } from '@nestjs/core';
+import { AppModule } from './app.module';
+import { ValidationPipe } from '@nestjs/common';
+import { HttpExceptionFilter } from './common/filters/http-exception.filter';
+
+async function bootstrap() {
+  const app = await NestFactory.create(AppModule);
+  app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
+  app.useGlobalFilters(new HttpExceptionFilter());
+  await app.listen(process.env.PORT || 3000);
+}
+bootstrap();
+```
+
+Each feature module binds domain interfaces to Objection implementations, e.g.:
+
+```ts
+// src/modules/order.module.ts
+import { Module } from '@nestjs/common';
+import { OrderController } from '../interfaces/http/controllers/order.controller';
+import { OrderService } from '../application/services/order.service';
+import { OrderRepository } from '../domain/repositories/order.repository';
+import { ObjectionOrderRepository } from '../infrastructure/objection/repositories/objection-order.repository';
+import { CalculatedOrderPricingPort } from '../domain/ports/calculated-order-pricing.port';
+import { ObjectionCalculatedOrderPricing } from '../infrastructure/objection/repositories/objection-calculated-order-pricing.port';
+import { UnitOfWork } from '../domain/ports/unit-of-work.port';
+import { ObjectionUnitOfWork } from '../infrastructure/objection/unit-of-work/objection-uow';
+import { OrderEvents } from '../domain/ports/order-events.port';
+import { OrderGateway } from '../infrastructure/events/order-events.gateway';
+
+@Module({
+  controllers: [OrderController],
+  providers: [
+    OrderService,
+    { provide: OrderRepository, useClass: ObjectionOrderRepository },
+    { provide: CalculatedOrderPricingPort, useClass: ObjectionCalculatedOrderPricing },
+    { provide: UnitOfWork, useClass: ObjectionUnitOfWork },
+    { provide: OrderEvents, useClass: OrderGateway },
+  ],
+})
+export class OrderModule {}
+```
+
+Replicate binding pattern for Brand, Meal, Addon, OrderType, CalculatedOrder, User modules.
+
+---
+
+# Task 2: High-level architecture
+
+```
+Clients (Web/Mobile)
+   | HTTPS + JWT
+   v
+API Gateway / LB
+   |
+   v
+NestJS Monolith (modular)
+ - Orders (domain services + processOrder)
+ - Meals, Addons, Brands, OrderTypes, Users (CRUD)
+ - WebSocket Gateway (order updates)
+ - DTO validation: class-validator + Joi
+ - Logging middleware + global exception filter
+   | \
+   |  \--> Redis (cache hot reads, WS scale-out later)
+   |
+   v
+PostgreSQL (Primary + Read Replicas)
+ - Orders, OrderLogs (partition by time for scale)
+ - CalculatedOrders (+ items, addons)
+ - Reference tables (Meals, Addons, Brands, OrderTypes, Users)
+```
+
+- **Data storage:** PostgreSQL primary for writes; add read replicas as load grows. Time-based partitioning on orders/logs to handle millions/day. Proper indexes on order_code, (user_id, created_at), (order_id, time).
+- **Microservices choice:** Start monolithic for velocity and coherence. If needed, carve out Payment, Dispatch, and Kitchen as separate services later (clear bounded contexts).
+- **Real-time updates:** WebSocket/SSE from Nest Gateway. Emit on “order.updated” after processOrder. Scale with Redis adapter if multiple instances.
+- **Caching:** Redis for hot reads (order detail, kitchen queues), idempotency keys, and WS pub/sub. Invalidate on status change events.
+- **Resilience:** Horizontal scale behind LB; health checks; graceful shutdown; retries and timeouts to external dependencies; DB connection pooling.
+- **Security:** JWT/OIDC for auth; role guard for sensitive endpoints; parameterized queries via Knex/Objection; PII minimization; encrypt secrets; network policies to isolate DB; if payments involved, isolate into a PCI-scoped service.
+
+---
+
+# Bonus
+
+- **Global exception filter:** Included.
+- **Authorization:** RolesGuard example included. Add a JWT auth guard upstream to populate req.user.
+- **Efficient queries:** Use `.page()` for pagination with total; for aggregates:
+  - Daily revenue by brand:
+    ```ts
+    // in a reporting repo/service
+    import { Model } from 'objection';
+    const knex = Model.knex();
+    await knex('orders as o')
+      .join('calculated_orders as co', 'co.id', 'o.calculated_order_id')
+      .join('calculated_order_meals as com', 'com.calculated_order_id', 'co.id')
+      .join('meals as m', 'm.id', 'com.meal_id')
+      .join('brands as b', 'b.id', 'm.brand_id')
+      .select(knex.raw("date_trunc('day', o.created_at) as day"), 'b.id as brand_id')
+      .sum({ total: knex.raw('(com.amount * com.quantity)') })
+      .groupBy('day', 'brand_id')

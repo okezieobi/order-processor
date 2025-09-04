@@ -1,10 +1,29 @@
-import { Module } from '@nestjs/common';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
+// src/app.module.ts
+import { Module, MiddlewareConsumer } from '@nestjs/common';
+import { DatabaseModule } from './infrastructure/database/database.module';
+import { OrderModule } from './modules/order.module'; // binds tokens to implementations
+import { BrandModule } from './modules/brand.module';
+import { MealModule } from './modules/meal.module';
+import { AddonModule } from './modules/addon.module';
+import { OrderTypeModule } from './modules/order-type.module';
+import { CalculatedOrderModule } from './modules/calculated-order.module';
+import { UserModule } from './modules/user.module';
+import { RequestLoggerMiddleware } from './common/middleware/request-logger.middleware';
 
 @Module({
-  imports: [],
-  controllers: [AppController],
-  providers: [AppService],
+  imports: [
+    DatabaseModule,
+    OrderModule,
+    BrandModule,
+    MealModule,
+    AddonModule,
+    OrderTypeModule,
+    CalculatedOrderModule,
+    UserModule,
+  ],
 })
-export class AppModule {}
+export class AppModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(RequestLoggerMiddleware).forRoutes('*');
+  }
+}

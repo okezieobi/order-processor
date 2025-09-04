@@ -1,0 +1,34 @@
+// src/interfaces/http/controllers/brand.controller.ts
+import { Controller, Get, Post, Put, Delete, Param, Body, Query } from '@nestjs/common';
+import { BrandService } from '../../../application/services/brand.service';
+import { BrandEntity } from '../../../domain/entities/brand.entity';
+
+@Controller('brands')
+export class BrandController {
+  constructor(private readonly service: BrandService) {}
+
+  @Post()
+  create(@Body() data: BrandEntity) {
+    return this.service.create(data);
+  }
+
+  @Get(':id')
+  findById(@Param('id') id: string) {
+    return this.service.findById(id);
+  }
+
+  @Put(':id')
+  update(@Param('id') id: string, @Body() data: Partial<BrandEntity>) {
+    return this.service.update(id, data);
+  }
+
+  @Delete(':id')
+  remove(@Param('id') id: string) {
+    return this.service.remove(id);
+  }
+
+  @Get()
+  list(@Query('page') page = '1', @Query('limit') limit = '20') {
+    return this.service.list(Number(page), Number(limit));
+  }
+}
