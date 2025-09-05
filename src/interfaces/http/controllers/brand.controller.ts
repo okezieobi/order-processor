@@ -10,14 +10,15 @@ import {
   Query,
 } from '@nestjs/common';
 import { BrandService } from '../../../application/services/brand.service';
-import { BrandEntity } from '../../../domain/entities/brand.entity';
+import { CreateBrandDto } from '../dto/brands/create-brand.dto';
+import { UpdateBrandDto } from '../dto/brands/update-brand.dto';
 
 @Controller('brands')
 export class BrandController {
   constructor(private readonly service: BrandService) {}
 
   @Post()
-  create(@Body() data: BrandEntity) {
+  create(@Body() data: CreateBrandDto) {
     return this.service.create(data);
   }
 
@@ -27,7 +28,7 @@ export class BrandController {
   }
 
   @Put(':id')
-  update(@Param('id') id: string, @Body() data: Partial<BrandEntity>) {
+  update(@Param('id') id: string, @Body() data: UpdateBrandDto) {
     return this.service.update(id, data);
   }
 

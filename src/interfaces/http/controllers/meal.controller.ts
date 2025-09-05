@@ -10,14 +10,15 @@ import {
   Query,
 } from '@nestjs/common';
 import { MealService } from '../../../application/services/meal.service';
-import { MealEntity } from '../../../domain/entities/meal.entity';
+import { CreateMealDto } from '../dto/meal/create-meal.dto';
+import { UpdateMealDto } from '../dto/meal/update-meal.dto';
 
 @Controller('meals')
 export class MealController {
   constructor(private readonly service: MealService) {}
 
   @Post()
-  create(@Body() data: MealEntity) {
+  create(@Body() data: CreateMealDto) {
     return this.service.create(data);
   }
 
@@ -27,7 +28,7 @@ export class MealController {
   }
 
   @Put(':id')
-  update(@Param('id') id: string, @Body() data: Partial<MealEntity>) {
+  update(@Param('id') id: string, @Body() data: UpdateMealDto) {
     return this.service.update(id, data);
   }
 
