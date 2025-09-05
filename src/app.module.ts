@@ -19,6 +19,7 @@ import { RequestLoggerMiddleware } from './common/middleware/request-logger.midd
     AddonModule,
     OrderTypeModule,
     CalculatedOrderModule,
+    UserModule,
   ],
 })
 export class AppModule {

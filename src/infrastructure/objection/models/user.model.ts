@@ -11,6 +11,7 @@ export class UserModel extends BaseModel {
   phone?: string;
   password_hash!: string;
   is_active!: boolean;
+  roles!: string[];
 
   static readonly relationMappings: RelationMappings = {
     orders: {

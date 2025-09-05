@@ -10,6 +10,7 @@ const fieldMap: FieldMap = [
   ['email', 'email'],
   ['phone', 'phone'],
   ['isActive', 'is_active'],
+  ['roles', 'roles'],
 ] as const;
 
 export function toUserEntity(model: UserModel): UserEntity {
