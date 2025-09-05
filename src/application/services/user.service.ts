@@ -1,5 +1,8 @@
-
-import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  ConflictException,
+} from '@nestjs/common';
 import { UserRepository } from '../../domain/repositories/user.repository';
 import { UserEntity } from '../../domain/entities/user.entity';
 import * as bcrypt from 'bcrypt';
@@ -34,7 +37,7 @@ export class UserService {
     return this.userRepository.create(user);
   }
 
-    async findById(id: string): Promise<UserEntity | null> {
+  async findById(id: string): Promise<UserEntity | null> {
     return this.userRepository.findById(id);
   }
 
@@ -52,7 +55,11 @@ export class UserService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    const accessToken = jwt.sign({ userId: user.id, roles: user.roles }, 'your-secret-key', { expiresIn: '1h' });
+    const accessToken = jwt.sign(
+      { userId: user.id, roles: user.roles },
+      'your-secret-key',
+      { expiresIn: '1h' },
+    );
 
     return { accessToken };
   }
