@@ -6,6 +6,7 @@ export interface UserEntity extends BaseEntity {
   lastName: string;
   email: string;
   phone?: string;
+  password_hash: string;
   isActive: boolean;
   roles: string[];
 }

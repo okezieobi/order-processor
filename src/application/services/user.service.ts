@@ -24,7 +24,7 @@ export class UserService {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const user = {
+    const user: UserEntity = {
       email,
       password_hash: hashedPassword,
       firstName,
@@ -32,7 +32,7 @@ export class UserService {
       phone,
       isActive: true,
       roles: ['user'],
-    } as unknown as UserEntity;
+    } as UserEntity;
 
     return this.userRepository.create(user);
   }
