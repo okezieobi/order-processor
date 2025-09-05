@@ -14,6 +14,10 @@ const fieldMap: FieldMap = [
   ['freeDelivery', 'free_delivery'],
   ['deliveryFee', 'delivery_fee'],
   ['serviceCharge', 'service_charge'],
+  ['addressDetails', 'address_details'],
+  ['lat', 'lat'],
+  ['lng', 'lng'],
+  ['pickup', 'pickup'],
 ] as const;
 
 export function toCalculatedOrderEntity(
@@ -46,7 +50,7 @@ export function fromCalculatedOrderEntityPatch(
     }
   }
 
-  // Note: fields not in the model are not patched: addressDetails, lat, lng, pickup.
+  
 
   return patch;
 }
