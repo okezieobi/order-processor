@@ -1,4 +1,3 @@
-
 import { Module } from '@nestjs/common';
 import { AddonController } from '../interfaces/http/controllers/addon.controller';
 import { AddonService } from '../application/services/addon.service';
