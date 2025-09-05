@@ -5,7 +5,7 @@ import { OrderService } from '../application/services/order.service';
 import { OrderRepository } from '../domain/repositories/order.repository';
 import { ObjectionOrderRepository } from '../infrastructure/objection/repositories/objection-order.repository';
 import { CalculatedOrderPricingPort } from '../domain/ports/calculated-order-pricing.port';
-import { ObjectionCalculatedOrderPricing } from '../infrastructure/objection/repositories/objection-calculated-order-pricing.port';
+import { ObjectionCalculatedOrderPricing } from '../infrastructure/objection/repositories/objection-calculated-order-pricing.repositories';
 import { UnitOfWork } from '../domain/ports/unit-of-work.port';
 import { ObjectionUnitOfWork } from '../infrastructure/objection/unit-of-work/objection-uow';
 import { OrderEvents } from '../domain/ports/order-events.port';
@@ -16,7 +16,10 @@ import { OrderGateway } from '../infrastructure/events/order-events.gateway';
   providers: [
     OrderService,
     { provide: OrderRepository, useClass: ObjectionOrderRepository },
-    { provide: CalculatedOrderPricingPort, useClass: ObjectionCalculatedOrderPricing },
+    {
+      provide: CalculatedOrderPricingPort,
+      useClass: ObjectionCalculatedOrderPricing,
+    },
     { provide: UnitOfWork, useClass: ObjectionUnitOfWork },
     { provide: OrderEvents, useClass: OrderGateway },
   ],

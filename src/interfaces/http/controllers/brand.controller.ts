@@ -1,5 +1,14 @@
 // src/interfaces/http/controllers/brand.controller.ts
-import { Controller, Get, Post, Put, Delete, Param, Body, Query } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Param,
+  Body,
+  Query,
+} from '@nestjs/common';
 import { BrandService } from '../../../application/services/brand.service';
 import { BrandEntity } from '../../../domain/entities/brand.entity';
 
