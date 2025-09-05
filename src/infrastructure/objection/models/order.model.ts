@@ -1,8 +1,8 @@
 import { BaseModel } from './base.model';
 import { RelationMappings } from 'objection';
-import { CalculatedOrderModel } from './calculated_order.model';
-import { OrderLogModel } from './order_log.model';
-import { OrderTypeModel } from './order_type.model';
+import { CalculatedOrderModel } from './calculated-order.model';
+import { OrderLogModel } from './order-log.model';
+import { OrderTypeModel } from './order-type.model';
 import { UserModel } from './user.model';
 
 export class OrderModel extends BaseModel {

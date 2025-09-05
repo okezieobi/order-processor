@@ -2,7 +2,7 @@
 import { OrderRepository } from '../../../domain/repositories/order.repository';
 import type { OrderEntity } from '../../../domain/entities/order.entity';
 import { OrderModel } from '../models/order.model';
-import { OrderLogModel } from '../models/order_log.model';
+import { OrderLogModel } from '../models/order-log.model';
 import { toOrderEntity, fromOrderEntityPatch } from '../mappers/order.mapper';
 import { Knex } from 'knex';
 

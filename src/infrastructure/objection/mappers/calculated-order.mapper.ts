@@ -1,6 +1,6 @@
 // src/infrastructure/objection/mappers/calculated_order.mapper.ts
-import { CalculatedOrderModel } from '../models/calculated_order.model';
-import { CalculatedOrderEntity } from '../../../domain/entities/calculated_order.entity';
+import { CalculatedOrderModel } from '../models/calculated-order.model';
+import { CalculatedOrderEntity } from '../../../domain/entities/calculated-order.entity';
 
 type FieldMap = ReadonlyArray<
   readonly [keyof CalculatedOrderEntity, keyof CalculatedOrderModel]

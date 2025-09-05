@@ -13,9 +13,7 @@ export class ObjectionMealRepository extends MealRepository {
     meal: Partial<MealEntity>,
     tx?: Knex.Transaction,
   ): Promise<MealEntity> {
-    const created = await MealModel.query(tx).insert(
-      fromMealEntityPatch(meal),
-    );
+    const created = await MealModel.query(tx).insert(fromMealEntityPatch(meal));
     return toMealEntity(created);
   }
   async findById(id: string, tx?: Knex.Transaction) {

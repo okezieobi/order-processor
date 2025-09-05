@@ -1,6 +1,6 @@
 // src/infrastructure/objection/mappers/order_type.mapper.ts
-import { OrderTypeModel } from '../models/order_type.model';
-import { OrderTypeEntity } from '../../../domain/entities/order_type.entity';
+import { OrderTypeModel } from '../models/order-type.model';
+import { OrderTypeEntity } from '../../../domain/entities/order-type.entity';
 
 type FieldMap = ReadonlyArray<
   readonly [keyof OrderTypeEntity, keyof OrderTypeModel]

@@ -2,8 +2,8 @@
 import { Injectable } from '@nestjs/common';
 
 import { BaseService } from './base.service';
-import { CalculatedOrderEntity } from '../../domain/entities/calculated_order.entity';
-import { CalculatedOrderRepository } from '../../domain/repositories/calculated_order.repository';
+import { CalculatedOrderEntity } from '../../domain/entities/calculated-order.entity';
+import { CalculatedOrderRepository } from '../../domain/repositories/calculated-order.repository';
 
 @Injectable()
 export class CalculatedOrderService extends BaseService<CalculatedOrderEntity> {

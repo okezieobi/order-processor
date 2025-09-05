@@ -1,5 +1,5 @@
 // src/infrastructure/events/order-events.gateway.ts
-import { OrderEvents } from '../../domain/ports/order_events.port';
+import { OrderEvents } from '../../domain/ports/order-events.port';
 import type { OrderEntity } from '../../domain/entities/order.entity';
 import { WebSocketGateway, WebSocketServer } from '@nestjs/websockets';
 import { Server } from 'socket.io';

@@ -33,10 +33,9 @@ export class ObjectionBrandRepository extends BrandRepository {
     await BrandModel.query(tx).deleteById(id);
   }
   async page(page: number, limit: number, tx?: Knex.Transaction) {
-    const { results, total }: Page<BrandModel> = await BrandModel.query(tx).page(
-      Math.max(0, page - 1),
-      limit,
-    );
+    const { results, total }: Page<BrandModel> = await BrandModel.query(
+      tx,
+    ).page(Math.max(0, page - 1), limit);
     return { data: results.map(toBrandEntity), total };
   }
 }

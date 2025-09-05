@@ -1,9 +1,9 @@
 // src/application/services/order.service.ts
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { OrderRepository } from '../../domain/repositories/order.repository';
-import { CalculatedOrderPricingPort } from '../../domain/ports/calculated_order_pricing.port';
-import { UnitOfWork } from '../../domain/ports/unit_of_work.port';
-import { OrderEvents } from '../../domain/ports/order_events.port';
+import { CalculatedOrderPricingPort } from '../../domain/ports/calculated-order-pricing.port';
+import { UnitOfWork } from '../../domain/ports/unit-of-work.port';
+import { OrderEvents } from '../../domain/ports/order-events.port';
 import type { OrderEntity } from '../../domain/entities/order.entity';
 
 export type OrderAction =

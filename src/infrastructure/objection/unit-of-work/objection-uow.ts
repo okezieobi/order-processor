@@ -1,5 +1,5 @@
 // src/infrastructure/objection/unit-of-work/objection-uow.ts
-import { UnitOfWork } from '../../../domain/ports/unit_of_work.port';
+import { UnitOfWork } from '../../../domain/ports/unit-of-work.port';
 import { Model, transaction } from 'objection';
 
 export class ObjectionUnitOfWork extends UnitOfWork {

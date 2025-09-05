@@ -2,8 +2,8 @@
 import { Injectable } from '@nestjs/common';
 import { BaseService } from './base.service';
 
-import { OrderTypeEntity } from '../../domain/entities/order_type.entity';
-import { OrderTypeRepository } from '../../domain/repositories/order_type.repository';
+import { OrderTypeEntity } from '../../domain/entities/order-type.entity';
+import { OrderTypeRepository } from '../../domain/repositories/order-type.repository';
 
 @Injectable()
 export class OrderTypeService extends BaseService<OrderTypeEntity> {
