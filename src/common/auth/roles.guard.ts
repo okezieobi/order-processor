@@ -8,7 +8,7 @@ import {
 
 @Injectable()
 export class RolesGuard implements CanActivate {
-  constructor(private roles: string[]) {}
+  constructor(private readonly roles: string[]) {}
   canActivate(ctx: ExecutionContext) {
     const req = ctx.switchToHttp().getRequest();
     const user = req.user; // set by a preceding JWT auth guard
