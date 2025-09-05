@@ -7,6 +7,7 @@ import { MealModule } from './modules/meal.module';
 import { AddonModule } from './modules/addon.module';
 import { OrderTypeModule } from './modules/order-type.module';
 import { CalculatedOrderModule } from './modules/calculated-order.module';
+import { UserModule } from './modules/user.module';
 
 import { RequestLoggerMiddleware } from './common/middleware/request-logger.middleware';
 
