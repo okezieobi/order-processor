@@ -1,8 +1,10 @@
-
 import { CalculatedOrderRepository } from '../../../domain/repositories/calculated-order.repository';
 import type { CalculatedOrderEntity } from '../../../domain/entities/calculated-order.entity';
 import { CalculatedOrderModel } from '../models/calculated-order.model';
-import { toCalculatedOrderEntity, fromCalculatedOrderEntityPatch } from '../mappers/calculated-order.mapper';
+import {
+  toCalculatedOrderEntity,
+  fromCalculatedOrderEntityPatch,
+} from '../mappers/calculated-order.mapper';
 import { Knex } from 'knex';
 import { Page } from 'objection';
 import { Injectable } from '@nestjs/common';
@@ -22,7 +24,11 @@ export class ObjectionCalculatedOrderRepository extends CalculatedOrderRepositor
     const found = await CalculatedOrderModel.query(tx).findById(id);
     return found ? toCalculatedOrderEntity(found) : null;
   }
-  async update(id: string, patch: Partial<CalculatedOrderEntity>, tx?: Knex.Transaction) {
+  async update(
+    id: string,
+    patch: Partial<CalculatedOrderEntity>,
+    tx?: Knex.Transaction,
+  ) {
     const updated = await CalculatedOrderModel.query(tx).patchAndFetchById(
       id,
       fromCalculatedOrderEntityPatch(patch),
@@ -33,9 +39,8 @@ export class ObjectionCalculatedOrderRepository extends CalculatedOrderRepositor
     await CalculatedOrderModel.query(tx).deleteById(id);
   }
   async page(page: number, limit: number, tx?: Knex.Transaction) {
-    const { results, total }: Page<CalculatedOrderModel> = await CalculatedOrderModel.query(
-      tx,
-    ).page(Math.max(0, page - 1), limit);
+    const { results, total }: Page<CalculatedOrderModel> =
+      await CalculatedOrderModel.query(tx).page(Math.max(0, page - 1), limit);
     return { data: results.map(toCalculatedOrderEntity), total };
   }
 }
