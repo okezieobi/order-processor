@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-unsafe-return */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
 import { Controller, Post, Body, Get, UseGuards, Req } from '@nestjs/common';
 import { UserService } from '../../../application/services/user.service';
 import { CreateUserDto } from '../dto/users/create-user.dto';
@@ -19,6 +22,7 @@ export class UserController {
   }
 
   @Get('profile')
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
   @UseGuards(AuthGuard('jwt'))
   getProfile(@Req() req) {
     return req.user;
