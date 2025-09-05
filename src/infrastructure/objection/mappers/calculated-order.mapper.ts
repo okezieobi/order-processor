@@ -50,7 +50,5 @@ export function fromCalculatedOrderEntityPatch(
     }
   }
 
-  
-
   return patch;
 }

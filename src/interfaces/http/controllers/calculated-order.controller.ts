@@ -1,4 +1,3 @@
-
 import {
   Controller,
   Get,
@@ -9,7 +8,7 @@ import {
   Body,
   Query,
 } from '@nestjs/common';
-import { CalculatedOrderService } from '../../../application/services/calcuated-order.service';
+import { CalculatedOrderService } from '../../../application/services/calculated-order.service';
 import { CreateCalculatedOrderDto } from '../dto/calculated-order/create-calculated-order.dto';
 import { UpdateCalculatedOrderDto } from '../dto/calculated-order/update-calculated-order.dto';
 

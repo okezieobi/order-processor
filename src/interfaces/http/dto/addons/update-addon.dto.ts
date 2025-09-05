@@ -1,4 +1,3 @@
-
 import { IsString, IsOptional, IsNumber, IsUUID } from 'class-validator';
 
 export class UpdateAddonDto {

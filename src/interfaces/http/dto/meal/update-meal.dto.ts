@@ -1,5 +1,10 @@
-
-import { IsString, IsOptional, IsBoolean, IsUUID, IsNumber } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsBoolean,
+  IsUUID,
+  IsNumber,
+} from 'class-validator';
 
 export class UpdateMealDto {
   @IsString()

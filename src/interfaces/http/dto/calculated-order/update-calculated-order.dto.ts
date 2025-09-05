@@ -1,5 +1,10 @@
-
-import { IsNumber, IsBoolean, IsObject, IsString, IsOptional } from 'class-validator';
+import {
+  IsNumber,
+  IsBoolean,
+  IsObject,
+  IsString,
+  IsOptional,
+} from 'class-validator';
 
 export class UpdateCalculatedOrderDto {
   @IsNumber()
