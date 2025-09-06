@@ -7,6 +7,9 @@
   "license": "UNLICENSED",
   "scripts": {
     "build": "nest build",
+    "migrate": "node -r ts-node/register -- ./node_modules/.bin/knex migrate:latest -c ./knexfile.ts",
+    "migrate:up": "node -r ts-node/register -- ./node_modules/.bin/knex migrate:up -c ./knexfile.ts",
+    "migrate:down": "node -r ts-node/register -- ./node_modules/.bin/knex migrate:down -c ./knexfile.ts",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
     "start:dev": "nest start --watch",
