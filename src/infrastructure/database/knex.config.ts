@@ -9,6 +9,9 @@ export const knexConfig: Knex.Config = {
     database: process.env.DB_NAME || 'order_processor',
   },
   pool: { min: 2, max: 10 },
-  migrations: { tableName: 'knex_migrations' },
+  migrations: {
+    tableName: 'knex_migrations',
+    directory: './src/infrastructure/database/migrations',
+  },
 };
 export const createKnex = () => knex(knexConfig);

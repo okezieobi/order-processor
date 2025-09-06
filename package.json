@@ -7,6 +7,8 @@
   "license": "UNLICENSED",
   "scripts": {
     "migrate": "npx knex migrate:latest -c ./knexfile.ts",
+    "migrate:up": "npx knex migrate:up -c ./knexfile.ts",
+    "migrate:down": "npx knex migrate:down -c ./knexfile.ts",
     "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
