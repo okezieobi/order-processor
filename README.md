@@ -2,6 +2,9 @@
   <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
 </p>
 
+[![Node.js CI](https://github.com/okezieobi/order-processor/actions/workflows/node.js.yml/badge.svg)](https://github.com/okezieobi/order-processor/actions/workflows/node.js.yml)
+
+
 [circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
 [circleci-url]: https://circleci.com/gh/nestjs/nest
 
@@ -24,6 +27,43 @@
 ## Description
 
 [Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+
+## Project overview
+
+This repository implements the Order Processor service used for managing brands, meals, addons, order types, calculated orders and orders. It uses NestJS, Objection.js with Knex and PostgreSQL. The test suite includes e2e tests that run against a local Postgres instance; CI runs the same e2e job via GitHub Actions.
+
+## Quick start (dev)
+
+These steps reproduce what CI runs locally.
+
+1. Start services with docker-compose:
+
+```bash
+docker compose -f docker-compose.yml up -d --build
+```
+
+2. Wait for Postgres to become ready:
+
+```bash
+until pg_isready -h localhost -p 5432; do sleep 1; done
+```
+
+3. Install dependencies and run migrations:
+
+```bash
+npm ci
+DB_HOST=localhost DB_USER=postgres DB_PASS=postgres DB_NAME=order_processor npm run migrate
+```
+
+4. Run e2e tests:
+
+```bash
+DB_HOST=localhost DB_USER=postgres DB_PASS=postgres DB_NAME=order_processor npm run test:e2e
+```
+
+Notes:
+- On macOS, the filesystem may be case-insensitive — CI runs on Linux and is case-sensitive. If you see module-not-found errors in Actions but not locally, check filename casing (git ls-files) and use a two-step git mv to normalize case.
+
 
 ## Project setup
 
