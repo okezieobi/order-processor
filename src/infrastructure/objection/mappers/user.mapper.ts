@@ -9,6 +9,7 @@ const fieldMap: FieldMap = [
   ['lastName', 'last_name'],
   ['email', 'email'],
   ['phone', 'phone'],
+  ['password_hash', 'password_hash'],
   ['isActive', 'is_active'],
   ['roles', 'roles'],
 ] as const;
