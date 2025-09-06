@@ -1,21 +1,24 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
-import * as request from 'supertest';
+import request from 'supertest'; // Changed import
 import { AppModule } from './../src/app.module';
 import { knexConfig } from '../src/infrastructure/database/knex.config';
-import knex from 'knex';
+import knex, { Knex } from 'knex'; // Added Knex import
 
 describe('UserController (e2e)', () => {
   let app: INestApplication;
-  let db: knex;
+  let db: Knex; // Changed type to Knex
 
   beforeAll(async () => {
     // Initialize Knex for database operations
     db = knex(knexConfig);
 
+    // Assert knexConfig.connection is an object with database property
+    const dbName = (knexConfig.connection as { database: string }).database;
+
     // Drop and recreate the database for a clean state
-    await db.raw(`DROP DATABASE IF EXISTS ${knexConfig.connection.database}`);
-    await db.raw(`CREATE DATABASE ${knexConfig.connection.database}`);
+    await db.raw(`DROP DATABASE IF EXISTS ${dbName}`);
+    await db.raw(`CREATE DATABASE ${dbName}`);
     await db.destroy(); // Destroy the old connection
 
     // Reconnect to the newly created database and run migrations

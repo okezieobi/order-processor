@@ -1,13 +1,13 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
-import * as request from 'supertest';
+import request from 'supertest';
 import { AppModule } from './../src/app.module';
 import { knexConfig } from '../src/infrastructure/database/knex.config';
-import knex from 'knex';
+import knex, { Knex } from 'knex';
 
 describe('OrderController (e2e)', () => {
   let app: INestApplication;
-  let db: knex;
+  let db: Knex;
   let createdOrderId: string;
   let createdUserId: string;
   let createdCalculatedOrderId: string;
@@ -45,8 +45,10 @@ describe('OrderController (e2e)', () => {
   beforeAll(async () => {
     db = knex(knexConfig);
 
-    await db.raw(`DROP DATABASE IF EXISTS ${knexConfig.connection.database}`);
-    await db.raw(`CREATE DATABASE ${knexConfig.connection.database}`);
+    const dbName = (knexConfig.connection as { database: string }).database;
+
+    await db.raw(`DROP DATABASE IF EXISTS ${dbName}`);
+    await db.raw(`CREATE DATABASE ${dbName}`);
     await db.destroy();
 
     db = knex(knexConfig);
