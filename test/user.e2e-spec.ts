@@ -13,20 +13,33 @@ describe('UserController (e2e)', () => {
   let db: Knex; // Changed type to Knex
 
   beforeAll(async () => {
-    // Initialize Knex for database operations
-    db = knex(knexConfig);
+    // Create a temporary Knex instance connected to the default 'postgres' database
+    // to drop/create the test database.
+    const adminKnexConfig = {
+      ...knexConfig,
+      connection: {
+        ...(knexConfig.connection as object),
+        database: 'postgres', // Connect to a default database
+      },
+    };
+    const adminDb = knex(adminKnexConfig);
 
-    // Assert knexConfig.connection is an object with database property
     const dbName = (knexConfig.connection as { database: string }).database;
 
-    // Drop and recreate the database for a clean state
-    await db.raw(`DROP DATABASE IF EXISTS ${dbName}`);
-    await db.raw(`CREATE DATABASE ${dbName}`);
-    await db.destroy(); // Destroy the old connection
+    try {
+      await adminDb.raw(`DROP DATABASE IF EXISTS ${dbName}`);
+      await adminDb.raw(`CREATE DATABASE ${dbName}`);
+    } finally {
+      await adminDb.destroy(); // Always destroy the admin connection
+    }
 
-    // Reconnect to the newly created database and run migrations
+    beforeAll(async () => {
+    // Connect to the database defined in knexConfig
     db = knex(knexConfig);
-    await db.migrate.latest();
+
+    // No need to drop/create database or run migrations here,
+    // as the database is assumed to be managed by docker-compose
+    // and migrations are run by the CI/CD pipeline.
 
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],

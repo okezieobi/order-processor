@@ -26,16 +26,12 @@ describe('MealController (e2e)', () => {
   };
 
   beforeAll(async () => {
+    // Connect to the database defined in knexConfig
     db = knex(knexConfig);
 
-    const dbName = (knexConfig.connection as { database: string }).database;
-
-    await db.raw(`DROP DATABASE IF EXISTS ${dbName}`);
-    await db.raw(`CREATE DATABASE ${dbName}`);
-    await db.destroy();
-
-    db = knex(knexConfig);
-    await db.migrate.latest();
+    // No need to drop/create database or run migrations here,
+    // as the database is assumed to be managed by docker-compose
+    // and migrations are run by the CI/CD pipeline.
 
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],

@@ -35,10 +35,10 @@ export function toOrderEntity(model: OrderModel): OrderEntity {
     createdAt: model.created_at,
     updatedAt: model.updated_at,
 
-    orderTotalAmountHistory: model.order_total_amount_history.map((entry) => ({
+    orderTotalAmountHistory: model.order_total_amount_history?.map((entry) => ({
       time: entry.time,
       totalAmount: entry.total_amount,
-    })),
+    })) || [],
   } as OrderEntity;
 
   for (const [entityKey, modelKey] of fieldMap) {
