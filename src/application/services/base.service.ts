@@ -1,5 +1,5 @@
-import { BaseEntity } from 'src/domain/entities/base.entity';
-import { BaseRepository } from 'src/domain/repositories/base.repository';
+import { BaseEntity } from '../../domain/entities/base.entity';
+import { BaseRepository } from '../../domain/repositories/base.repository';
 import { NotFoundException } from '@nestjs/common';
 
 export class BaseService<E extends BaseEntity> {
