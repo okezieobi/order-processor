@@ -10,6 +10,7 @@ import {
   Query,
 } from '@nestjs/common';
 import { MealService } from '../../../application/services/meal.service';
+import { Roles } from '../../../common/auth/roles.decorator';
 import { CreateMealDto } from '../dto/meal/create-meal.dto';
 import { UpdateMealDto } from '../dto/meal/update-meal.dto';
 
@@ -18,6 +19,7 @@ export class MealController {
   constructor(private readonly service: MealService) {}
 
   @Post()
+  @Roles('admins')
   create(@Body() data: CreateMealDto) {
     return this.service.create(data);
   }
@@ -28,11 +30,13 @@ export class MealController {
   }
 
   @Put(':id')
+  @Roles('admins')
   update(@Param('id') id: string, @Body() data: UpdateMealDto) {
     return this.service.update(id, data);
   }
 
   @Delete(':id')
+  @Roles('admins')
   remove(@Param('id') id: string) {
     return this.service.remove(id);
   }

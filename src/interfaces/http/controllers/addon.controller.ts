@@ -10,6 +10,7 @@ import {
   Query,
 } from '@nestjs/common';
 import { AddonService } from '../../../application/services/addon.service';
+import { Roles } from '../../../common/auth/roles.decorator';
 import { CreateAddonDto } from '../dto/addons/create-addon.dto';
 import { UpdateAddonDto } from '../dto/addons/update-addon.dto';
 
@@ -18,6 +19,7 @@ export class AddonController {
   constructor(private readonly service: AddonService) {}
 
   @Post()
+  @Roles('admins')
   create(@Body() data: CreateAddonDto) {
     return this.service.create(data);
   }
@@ -28,11 +30,13 @@ export class AddonController {
   }
 
   @Put(':id')
+  @Roles('admins')
   update(@Param('id') id: string, @Body() data: UpdateAddonDto) {
     return this.service.update(id, data);
   }
 
   @Delete(':id')
+  @Roles('admins')
   remove(@Param('id') id: string) {
     return this.service.remove(id);
   }

@@ -15,6 +15,8 @@ describe('OrderController (e2e)', () => {
   let createdUserId: string;
   let createdCalculatedOrderId: string;
   let createdOrderTypeId: string;
+  let userToken: string;
+  let adminToken: string;
 
   const createUserDto = {
     email: 'order_test_user@example.com',
@@ -69,8 +71,16 @@ describe('OrderController (e2e)', () => {
       .send(createUserDto);
     createdUserId = userRes.body.id;
 
+    // login the created user to obtain token for owner-scoped operations
+    const userLoginRes = await request(app.getHttpServer())
+      .post('/users/login')
+      .send({ email: createUserDto.email, password: createUserDto.password })
+      .expect(201);
+    userToken = userLoginRes.body.accessToken as string;
+
     const calculatedOrderRes = await request(app.getHttpServer())
       .post('/calculated-orders')
+      .set('Authorization', `Bearer ${userToken}`)
       .send(createCalculatedOrderDto);
     createdCalculatedOrderId = calculatedOrderRes.body.id;
 
@@ -78,6 +88,23 @@ describe('OrderController (e2e)', () => {
       .post('/order-types')
       .send(createOrderTypeDto);
     createdOrderTypeId = orderTypeRes.body.id;
+
+    // create an admin token for admin-only operations
+    const admin = {
+      email: `order_admin+${Date.now()}@example.com`,
+      password: 'adminpassword',
+      firstName: 'Admin',
+      lastName: 'User',
+    };
+    await request(app.getHttpServer())
+      .post('/users/signup-admin')
+      .send(admin)
+      .expect(201);
+    const adminLoginRes = await request(app.getHttpServer())
+      .post('/users/login')
+      .send({ email: admin.email, password: admin.password })
+      .expect(201);
+    adminToken = adminLoginRes.body.accessToken as string;
 
     createOrderDto.userId = createdUserId;
     createOrderDto.calculatedOrderId = createdCalculatedOrderId;
@@ -90,9 +117,10 @@ describe('OrderController (e2e)', () => {
     await db.destroy();
   });
 
-  it('POST /orders - should create a new order', () => {
+  it('POST /orders - should create a new order', async () => {
     return request(app.getHttpServer())
       .post('/orders')
+      .set('Authorization', `Bearer ${userToken}`)
       .send(createOrderDto)
       .expect(201)
       .expect((res) => {
@@ -102,9 +130,10 @@ describe('OrderController (e2e)', () => {
       });
   });
 
-  it('GET /orders/:id - should return an order by ID', () => {
+  it('GET /orders/:id - should return an order by ID', async () => {
     return request(app.getHttpServer())
       .get(`/orders/${createdOrderId}`)
+      .set('Authorization', `Bearer ${userToken}`)
       .expect(200)
       .expect((res) => {
         expect(res.body.id).toEqual(createdOrderId);
@@ -112,10 +141,11 @@ describe('OrderController (e2e)', () => {
       });
   });
 
-  it('PUT /orders/:id - should update an order by ID', () => {
+  it('PUT /orders/:id - should update an order by ID', async () => {
     const updateDto = { paid: true };
     return request(app.getHttpServer())
       .put(`/orders/${createdOrderId}`)
+      .set('Authorization', `Bearer ${userToken}`)
       .send(updateDto)
       .expect(200)
       .expect((res) => {
@@ -124,9 +154,10 @@ describe('OrderController (e2e)', () => {
       });
   });
 
-  it('GET /orders - should return a paginated list of orders', () => {
+  it('GET /orders - should return a paginated list of orders', async () => {
     return request(app.getHttpServer())
       .get('/orders?page=1&limit=10')
+      .set('Authorization', `Bearer ${adminToken}`)
       .expect(200)
       .expect((res) => {
         expect(res.body.data).toBeInstanceOf(Array);
@@ -136,9 +167,10 @@ describe('OrderController (e2e)', () => {
   });
 
   describe('POST /orders/:id/process', () => {
-    it('should accept an order', () => {
+    it('should accept an order', async () => {
       return request(app.getHttpServer())
         .post(`/orders/${createdOrderId}/process?action=accept`)
+        .set('Authorization', `Bearer ${adminToken}`)
         .expect(200)
         .expect((res) => {
           expect(res.body.kitchenAccepted).toEqual(true);
@@ -146,9 +178,10 @@ describe('OrderController (e2e)', () => {
         });
     });
 
-    it('should prepare an order', () => {
+    it('should prepare an order', async () => {
       return request(app.getHttpServer())
         .post(`/orders/${createdOrderId}/process?action=prepare`)
+        .set('Authorization', `Bearer ${adminToken}`)
         .expect(200)
         .expect((res) => {
           expect(res.body.kitchenPrepared).toEqual(true);
@@ -156,9 +189,10 @@ describe('OrderController (e2e)', () => {
         });
     });
 
-    it('should dispatch an order', () => {
+    it('should dispatch an order', async () => {
       return request(app.getHttpServer())
         .post(`/orders/${createdOrderId}/process?action=dispatch`)
+        .set('Authorization', `Bearer ${adminToken}`)
         .expect(200)
         .expect((res) => {
           expect(res.body.kitchenDispatched).toEqual(true);
@@ -166,9 +200,10 @@ describe('OrderController (e2e)', () => {
         });
     });
 
-    it('should complete an order', () => {
+    it('should complete an order', async () => {
       return request(app.getHttpServer())
         .post(`/orders/${createdOrderId}/process?action=complete`)
+        .set('Authorization', `Bearer ${adminToken}`)
         .expect(200)
         .expect((res) => {
           expect(res.body.completed).toEqual(true);
@@ -180,11 +215,13 @@ describe('OrderController (e2e)', () => {
       // Create a new order to cancel, as the previous one is completed
       const newOrderRes = await request(app.getHttpServer())
         .post('/orders')
+        .set('Authorization', `Bearer ${userToken}`)
         .send(createOrderDto);
       const newOrderId = newOrderRes.body.id;
 
       return request(app.getHttpServer())
         .post(`/orders/${newOrderId}/process?action=cancel`)
+        .set('Authorization', `Bearer ${adminToken}`)
         .expect(200)
         .expect((res) => {
           expect(res.body.cancelled).toEqual(true);
@@ -192,18 +229,20 @@ describe('OrderController (e2e)', () => {
     });
   });
 
-  it('DELETE /orders/:id - should remove an order by ID', () => {
+  it('DELETE /orders/:id - should remove an order by ID', async () => {
     return request(app.getHttpServer())
       .delete(`/orders/${createdOrderId}`)
+      .set('Authorization', `Bearer ${adminToken}`)
       .expect(200)
       .expect((res) => {
         expect(res.body.deleted).toEqual(true);
       });
   });
 
-  it('GET /orders/:id - should return 404 after deletion', () => {
+  it('GET /orders/:id - should return 404 after deletion', async () => {
     return request(app.getHttpServer())
       .get(`/orders/${createdOrderId}`)
+      .set('Authorization', `Bearer ${adminToken}`)
       .expect(404);
   });
 });

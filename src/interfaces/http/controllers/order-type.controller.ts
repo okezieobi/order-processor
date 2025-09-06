@@ -9,6 +9,7 @@ import {
   Query,
 } from '@nestjs/common';
 import { OrderTypeService } from '../../../application/services/order-type.service';
+import { Roles } from '../../../common/auth/roles.decorator';
 import { CreateOrderTypeDto } from '../dto/order-type/create-order-type.dto';
 import { UpdateOrderTypeDto } from '../dto/order-type/update-order-type.dto';
 
@@ -17,6 +18,7 @@ export class OrderTypeController {
   constructor(private readonly service: OrderTypeService) {}
 
   @Post()
+  @Roles('admins')
   create(@Body() data: CreateOrderTypeDto) {
     return this.service.create(data);
   }
@@ -27,11 +29,13 @@ export class OrderTypeController {
   }
 
   @Put(':id')
+  @Roles('admins')
   update(@Param('id') id: string, @Body() data: UpdateOrderTypeDto) {
     return this.service.update(id, data);
   }
 
   @Delete(':id')
+  @Roles('admins')
   remove(@Param('id') id: string) {
     return this.service.remove(id);
   }

@@ -9,6 +9,7 @@ import {
   Query,
 } from '@nestjs/common';
 import { CalculatedOrderService } from '../../../application/services/calculated-order.service';
+import { Roles } from '../../../common/auth/roles.decorator';
 import { CreateCalculatedOrderDto } from '../dto/calculated-order/create-calculated-order.dto';
 import { UpdateCalculatedOrderDto } from '../dto/calculated-order/update-calculated-order.dto';
 
@@ -17,6 +18,7 @@ export class CalculatedOrderController {
   constructor(private readonly service: CalculatedOrderService) {}
 
   @Post()
+  @Roles('users', 'admins')
   create(@Body() data: CreateCalculatedOrderDto) {
     return this.service.create(data);
   }
@@ -27,11 +29,13 @@ export class CalculatedOrderController {
   }
 
   @Put(':id')
+  @Roles('admins')
   update(@Param('id') id: string, @Body() data: UpdateCalculatedOrderDto) {
     return this.service.update(id, data);
   }
 
   @Delete(':id')
+  @Roles('admins')
   remove(@Param('id') id: string) {
     return this.service.remove(id);
   }

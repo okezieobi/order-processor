@@ -13,6 +13,7 @@ describe('MealController (e2e)', () => {
   let db: Knex;
   let createdMealId: string;
   let createdBrandId: string;
+  let adminToken: string;
 
   const createBrandDto = {
     name: 'Test Brand for Meal',
@@ -41,8 +42,26 @@ describe('MealController (e2e)', () => {
     await app.init();
 
     // Create a brand first, as meal has a brandId foreign key
+    // create an admin and login so we can create a brand
+    const admin = {
+      email: `meal_admin+${Date.now()}@example.com`,
+      password: 'adminpassword',
+      firstName: 'Admin',
+      lastName: 'User',
+    };
+    await request(app.getHttpServer())
+      .post('/users/signup-admin')
+      .send(admin)
+      .expect(201);
+    const adminLogin = await request(app.getHttpServer())
+      .post('/users/login')
+      .send({ email: admin.email, password: admin.password })
+      .expect(201);
+    adminToken = adminLogin.body.accessToken as string;
+
     const brandRes = await request(app.getHttpServer())
       .post('/brands')
+      .set('Authorization', `Bearer ${adminToken}`)
       .send(createBrandDto);
     createdBrandId = brandRes.body.id;
     createMealDto.brandId = createdBrandId;
@@ -56,6 +75,7 @@ describe('MealController (e2e)', () => {
   it('POST /meals - should create a new meal', () => {
     return request(app.getHttpServer())
       .post('/meals')
+      .set('Authorization', `Bearer ${adminToken}`)
       .send(createMealDto)
       .expect(201)
       .expect((res) => {
@@ -70,6 +90,7 @@ describe('MealController (e2e)', () => {
   it('GET /meals/:id - should return a meal by ID', () => {
     return request(app.getHttpServer())
       .get(`/meals/${createdMealId}`)
+      .set('Authorization', `Bearer ${adminToken}`)
       .expect(200)
       .expect((res) => {
         expect(res.body.id).toEqual(createdMealId);
@@ -81,6 +102,7 @@ describe('MealController (e2e)', () => {
     const updateDto = { name: 'Cheeseburger', amount: 1200 };
     return request(app.getHttpServer())
       .put(`/meals/${createdMealId}`)
+      .set('Authorization', `Bearer ${adminToken}`)
       .send(updateDto)
       .expect(200)
       .expect((res) => {
@@ -93,6 +115,7 @@ describe('MealController (e2e)', () => {
   it('GET /meals - should return a paginated list of meals', () => {
     return request(app.getHttpServer())
       .get('/meals?page=1&limit=10')
+      .set('Authorization', `Bearer ${adminToken}`)
       .expect(200)
       .expect((res) => {
         expect(res.body.data).toBeInstanceOf(Array);
@@ -104,6 +127,7 @@ describe('MealController (e2e)', () => {
   it('DELETE /meals/:id - should remove a meal by ID', () => {
     return request(app.getHttpServer())
       .delete(`/meals/${createdMealId}`)
+      .set('Authorization', `Bearer ${adminToken}`)
       .expect(200)
       .expect((res) => {
         expect(res.body.deleted).toEqual(true);
@@ -113,6 +137,7 @@ describe('MealController (e2e)', () => {
   it('GET /meals/:id - should return 404 after deletion', () => {
     return request(app.getHttpServer())
       .get(`/meals/${createdMealId}`)
+      .set('Authorization', `Bearer ${adminToken}`)
       .expect(404);
   });
 });

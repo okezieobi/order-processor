@@ -13,6 +13,7 @@ describe('CalculatedOrderController (e2e)', () => {
   let app: INestApplication;
   let db: Knex;
   let createdOrderId: string;
+  let adminToken: string;
 
   const createDto = {
     totalAmount: 1000,
@@ -39,6 +40,23 @@ describe('CalculatedOrderController (e2e)', () => {
 
     app = moduleFixture.createNestApplication();
     await app.init();
+
+    // create and login an admin to authenticate protected endpoints
+    const admin = {
+      email: `calc_admin+${Date.now()}@example.com`,
+      password: 'adminpassword',
+      firstName: 'Admin',
+      lastName: 'User',
+    };
+    await request(app.getHttpServer())
+      .post('/users/signup-admin')
+      .send(admin)
+      .expect(201);
+    const adminLogin = await request(app.getHttpServer())
+      .post('/users/login')
+      .send({ email: admin.email, password: admin.password })
+      .expect(201);
+    adminToken = adminLogin.body.accessToken as string;
   });
 
   afterAll(async () => {
@@ -46,9 +64,10 @@ describe('CalculatedOrderController (e2e)', () => {
     await db.destroy();
   });
 
-  it('POST /calculated-orders - should create a new calculated order', () => {
+  it('POST /calculated-orders - should create a new calculated order', async () => {
     return request(app.getHttpServer())
       .post('/calculated-orders')
+      .set('Authorization', `Bearer ${adminToken}`)
       .send(createDto)
       .expect(201)
       .expect((res) => {
@@ -58,9 +77,10 @@ describe('CalculatedOrderController (e2e)', () => {
       });
   });
 
-  it('GET /calculated-orders/:id - should return a calculated order by ID', () => {
+  it('GET /calculated-orders/:id - should return a calculated order by ID', async () => {
     return request(app.getHttpServer())
       .get(`/calculated-orders/${createdOrderId}`)
+      .set('Authorization', `Bearer ${adminToken}`)
       .expect(200)
       .expect((res) => {
         expect(res.body.id).toEqual(createdOrderId);
@@ -68,10 +88,11 @@ describe('CalculatedOrderController (e2e)', () => {
       });
   });
 
-  it('PUT /calculated-orders/:id - should update a calculated order by ID', () => {
+  it('PUT /calculated-orders/:id - should update a calculated order by ID', async () => {
     const updateDto = { totalAmount: 2000, freeDelivery: true };
     return request(app.getHttpServer())
       .put(`/calculated-orders/${createdOrderId}`)
+      .set('Authorization', `Bearer ${adminToken}`)
       .send(updateDto)
       .expect(200)
       .expect((res) => {
@@ -81,9 +102,10 @@ describe('CalculatedOrderController (e2e)', () => {
       });
   });
 
-  it('GET /calculated-orders - should return a paginated list of calculated orders', () => {
+  it('GET /calculated-orders - should return a paginated list of calculated orders', async () => {
     return request(app.getHttpServer())
       .get('/calculated-orders?page=1&limit=10')
+      .set('Authorization', `Bearer ${adminToken}`)
       .expect(200)
       .expect((res) => {
         expect(res.body.data).toBeInstanceOf(Array);
@@ -92,18 +114,20 @@ describe('CalculatedOrderController (e2e)', () => {
       });
   });
 
-  it('DELETE /calculated-orders/:id - should remove a calculated order by ID', () => {
+  it('DELETE /calculated-orders/:id - should remove a calculated order by ID', async () => {
     return request(app.getHttpServer())
       .delete(`/calculated-orders/${createdOrderId}`)
+      .set('Authorization', `Bearer ${adminToken}`)
       .expect(200)
       .expect((res) => {
         expect(res.body.deleted).toEqual(true);
       });
   });
 
-  it('GET /calculated-orders/:id - should return 404 after deletion', () => {
+  it('GET /calculated-orders/:id - should return 404 after deletion', async () => {
     return request(app.getHttpServer())
       .get(`/calculated-orders/${createdOrderId}`)
+      .set('Authorization', `Bearer ${adminToken}`)
       .expect(404);
   });
 });

@@ -10,6 +10,7 @@ import {
   Query,
 } from '@nestjs/common';
 import { BrandService } from '../../../application/services/brand.service';
+import { Roles } from '../../../common/auth/roles.decorator';
 import { CreateBrandDto } from '../dto/brands/create-brand.dto';
 import { UpdateBrandDto } from '../dto/brands/update-brand.dto';
 
@@ -18,6 +19,7 @@ export class BrandController {
   constructor(private readonly service: BrandService) {}
 
   @Post()
+  @Roles('admins')
   create(@Body() data: CreateBrandDto) {
     return this.service.create(data);
   }
@@ -28,11 +30,13 @@ export class BrandController {
   }
 
   @Put(':id')
+  @Roles('admins')
   update(@Param('id') id: string, @Body() data: UpdateBrandDto) {
     return this.service.update(id, data);
   }
 
   @Delete(':id')
+  @Roles('admins')
   remove(@Param('id') id: string) {
     return this.service.remove(id);
   }

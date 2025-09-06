@@ -13,6 +13,7 @@ describe('AddonController (e2e)', () => {
   let db: Knex;
   let createdAddonId: string;
   let createdBrandId: string;
+  let adminToken: string;
 
   const createBrandDto = {
     name: 'Test Brand for Addon',
@@ -40,8 +41,25 @@ describe('AddonController (e2e)', () => {
     await app.init();
 
     // Create a brand first, as addon has a brandId foreign key
+    const admin = {
+      email: `addon_admin+${Date.now()}@example.com`,
+      password: 'adminpassword',
+      firstName: 'Admin',
+      lastName: 'User',
+    };
+    await request(app.getHttpServer())
+      .post('/users/signup-admin')
+      .send(admin)
+      .expect(201);
+    const adminLogin = await request(app.getHttpServer())
+      .post('/users/login')
+      .send({ email: admin.email, password: admin.password })
+      .expect(201);
+    adminToken = adminLogin.body.accessToken as string;
+
     const brandRes = await request(app.getHttpServer())
       .post('/brands')
+      .set('Authorization', `Bearer ${adminToken}`)
       .send(createBrandDto);
     createdBrandId = brandRes.body.id;
     createAddonDto.brandId = createdBrandId;
@@ -55,6 +73,7 @@ describe('AddonController (e2e)', () => {
   it('POST /addons - should create a new addon', () => {
     return request(app.getHttpServer())
       .post('/addons')
+      .set('Authorization', `Bearer ${adminToken}`)
       .send(createAddonDto)
       .expect(201)
       .expect((res) => {
@@ -69,6 +88,7 @@ describe('AddonController (e2e)', () => {
   it('GET /addons/:id - should return an addon by ID', () => {
     return request(app.getHttpServer())
       .get(`/addons/${createdAddonId}`)
+      .set('Authorization', `Bearer ${adminToken}`)
       .expect(200)
       .expect((res) => {
         expect(res.body.id).toEqual(createdAddonId);
@@ -80,6 +100,7 @@ describe('AddonController (e2e)', () => {
     const updateDto = { name: 'Double Cheese', amount: 150 };
     return request(app.getHttpServer())
       .put(`/addons/${createdAddonId}`)
+      .set('Authorization', `Bearer ${adminToken}`)
       .send(updateDto)
       .expect(200)
       .expect((res) => {
@@ -92,6 +113,7 @@ describe('AddonController (e2e)', () => {
   it('GET /addons - should return a paginated list of addons', () => {
     return request(app.getHttpServer())
       .get('/addons?page=1&limit=10')
+      .set('Authorization', `Bearer ${adminToken}`)
       .expect(200)
       .expect((res) => {
         expect(res.body.data).toBeInstanceOf(Array);
@@ -103,6 +125,7 @@ describe('AddonController (e2e)', () => {
   it('DELETE /addons/:id - should remove an addon by ID', () => {
     return request(app.getHttpServer())
       .delete(`/addons/${createdAddonId}`)
+      .set('Authorization', `Bearer ${adminToken}`)
       .expect(200)
       .expect((res) => {
         expect(res.body.deleted).toEqual(true);
@@ -112,6 +135,7 @@ describe('AddonController (e2e)', () => {
   it('GET /addons/:id - should return 404 after deletion', () => {
     return request(app.getHttpServer())
       .get(`/addons/${createdAddonId}`)
+      .set('Authorization', `Bearer ${adminToken}`)
       .expect(404);
   });
 });
