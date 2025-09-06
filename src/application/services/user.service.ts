@@ -35,7 +35,7 @@ export class UserService {
       phone,
       isActive: true,
       roles: JSON.stringify(roles) as unknown as string[],
-    } as UserEntity;
+    };
 
     return this.userRepository.create(user);
   }
