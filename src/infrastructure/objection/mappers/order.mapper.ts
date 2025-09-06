@@ -37,7 +37,7 @@ export function toOrderEntity(model: OrderModel): OrderEntity {
 
     orderTotalAmountHistory: model.order_total_amount_history.map((entry) => ({
       time: entry.time,
-      total_amount: entry.total_amount,
+      totalAmount: entry.total_amount,
     })),
   } as OrderEntity;
 
@@ -64,7 +64,7 @@ export function fromOrderEntityPatch(
     patch.order_total_amount_history = entity.orderTotalAmountHistory.map(
       (entry) => ({
         time: entry.time,
-        total_amount: entry.total_amount,
+        total_amount: entry.totalAmount,
       }),
     );
   }

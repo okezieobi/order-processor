@@ -3,7 +3,7 @@ import { BaseEntity } from './base.entity';
 // src/domain/entities/order.entity.ts
 export interface OrderTotalHistoryEntry {
   time: string;
-  total_amount: number;
+  totalAmount: number;
 }
 
 export interface OrderEntity extends BaseEntity {
