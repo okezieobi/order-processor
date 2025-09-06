@@ -1,4 +1,3 @@
-
 import { Module } from '@nestjs/common';
 import { CalculatedOrderController } from '../interfaces/http/controllers/calculated-order.controller';
 import { CalculatedOrderService } from '../application/services/calculated-order.service';
@@ -9,7 +8,10 @@ import { ObjectionCalculatedOrderRepository } from '../infrastructure/objection/
   controllers: [CalculatedOrderController],
   providers: [
     CalculatedOrderService,
-    { provide: CalculatedOrderRepository, useClass: ObjectionCalculatedOrderRepository },
+    {
+      provide: CalculatedOrderRepository,
+      useClass: ObjectionCalculatedOrderRepository,
+    },
   ],
 })
 export class CalculatedOrderModule {}

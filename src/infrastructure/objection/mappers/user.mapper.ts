@@ -26,10 +26,13 @@ export function toUserEntity(model: UserModel): UserEntity {
   }
 
   // Normalize roles: Postgres/Objection may return jsonb as a string.
-  const rawRoles = (model as any).roles;
+  const rawRoles = (model as unknown as Record<string, unknown>).roles;
   if (typeof rawRoles === 'string') {
     try {
-      entity.roles = JSON.parse(rawRoles);
+      const parsed: unknown = JSON.parse(rawRoles);
+      entity.roles = Array.isArray(parsed)
+        ? (parsed as string[])
+        : [String(rawRoles)];
     } catch {
       entity.roles = [String(rawRoles)];
     }

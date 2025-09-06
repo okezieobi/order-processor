@@ -14,17 +14,23 @@ export class ObjectionOrderRepository implements OrderRepository {
   ): Promise<OrderEntity> {
     const modelPatch = fromOrderEntityPatch(order);
     // Normalize order_total_amount_history to ensure plain JSON objects
-    if ((modelPatch as any).order_total_amount_history !== undefined) {
-      const normalized = normalizeOrderTotalAmountHistory((modelPatch as any).order_total_amount_history);
-      (modelPatch as any).order_total_amount_history = normalized;
+    const mp = modelPatch as Record<string, unknown>;
+    if (Object.hasOwn(mp, 'order_total_amount_history')) {
+      const rawValue = mp['order_total_amount_history'];
+      const normalized = normalizeOrderTotalAmountHistory(rawValue);
+      mp['order_total_amount_history'] = normalized as unknown;
       // Ensure we pass a JSONB literal to PG to avoid double-encoding issues
       try {
-        (modelPatch as any).order_total_amount_history = OrderModel.knex().raw('?::jsonb', [JSON.stringify(normalized)]);
+        mp['order_total_amount_history'] = OrderModel.knex().raw('?::jsonb', [
+          JSON.stringify(normalized),
+        ]) as unknown;
       } catch {
         // if knex/raw fails for any reason, leave the normalized array
       }
     }
-    const created = await OrderModel.query(tx).insert(modelPatch);
+    const partial: Partial<typeof OrderModel.prototype> =
+      modelPatch as unknown as Partial<typeof OrderModel.prototype>;
+    const created = await OrderModel.query(tx).insert(partial);
     return toOrderEntity(created);
   }
   async findById(id: string, tx?: Knex.Transaction) {
@@ -33,18 +39,27 @@ export class ObjectionOrderRepository implements OrderRepository {
   }
   async update(id: string, patch: Partial<OrderEntity>, tx?: Knex.Transaction) {
     const modelPatch = fromOrderEntityPatch(patch);
-    if ((modelPatch as any).order_total_amount_history !== undefined) {
-      const normalized = normalizeOrderTotalAmountHistory((modelPatch as any).order_total_amount_history);
-      (modelPatch as any).order_total_amount_history = normalized;
+    const mp = modelPatch as Record<string, unknown>;
+    if (Object.hasOwn(mp, 'order_total_amount_history')) {
+      const rawValue = mp['order_total_amount_history'];
+      const normalized = normalizeOrderTotalAmountHistory(rawValue);
+      mp['order_total_amount_history'] = normalized as unknown;
       try {
-        (modelPatch as any).order_total_amount_history = OrderModel.knex().raw('?::jsonb', [JSON.stringify(normalized)]);
+        mp['order_total_amount_history'] = OrderModel.knex().raw('?::jsonb', [
+          JSON.stringify(normalized),
+        ]) as unknown;
       } catch {
         // ignore
       }
     }
     // Temporary debug: print order_total_amount_history payload to diagnose PG json errors
-  // no-op: modelPatch.order_total_amount_history normalized above
-  const updated = await OrderModel.query(tx).patchAndFetchById(id, modelPatch as any);
+    // no-op: modelPatch.order_total_amount_history normalized above
+    const partialPatch: Partial<typeof OrderModel.prototype> =
+      modelPatch as unknown as Partial<typeof OrderModel.prototype>;
+    const updated = await OrderModel.query(tx).patchAndFetchById(
+      id,
+      partialPatch,
+    );
     return updated ? toOrderEntity(updated) : null;
   }
   async remove(id: string, tx?: Knex.Transaction) {

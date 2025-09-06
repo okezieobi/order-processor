@@ -30,14 +30,14 @@ describe('UserController (e2e)', () => {
   });
 
   const user = {
-  email: `test+${Date.now()}@example.com`,
+    email: `test+${Date.now()}@example.com`,
     password: 'password123',
     firstName: 'Test',
     lastName: 'User',
   };
 
   const adminUser = {
-  email: `admin+${Date.now()}@example.com`,
+    email: `admin+${Date.now()}@example.com`,
     password: 'adminpassword',
     firstName: 'Admin',
     lastName: 'User',

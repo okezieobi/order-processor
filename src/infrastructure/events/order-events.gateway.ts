@@ -14,20 +14,19 @@ export class OrderGateway extends OrderEvents implements OnModuleDestroy {
     this.server.emit('order.updated', order);
   }
 
-    async onModuleDestroy() {
-      const s = this.server as (Server & { close?: Promise<void> | (() => void) }) | undefined;
-      if (!s?.close) return;
-      // close may return a promise or be synchronous
-      // await if it returns a promise
-      // eslint-disable-next-line @typescript-eslint/ban-types
-      const result = (s.close as unknown) as Promise<void> | Function;
-      if (typeof result === 'function') {
-        const maybePromise = (result as Function).call(s);
-        if (maybePromise && typeof (maybePromise as Promise<void>).then === 'function') {
-          await (maybePromise as Promise<void>);
-        }
-      } else if (result && typeof (result as Promise<void>).then === 'function') {
-        await (result as Promise<void>);
+  async onModuleDestroy() {
+    const s = this.server as
+      | (Server & { close?: (() => void) | (() => Promise<void>) })
+      | undefined;
+    if (!s?.close) return;
+
+    try {
+      const maybe = s.close() as unknown;
+      if (maybe && typeof (maybe as { then?: unknown }).then === 'function') {
+        await (maybe as Promise<void>);
       }
+    } catch {
+      // ignore any errors during shutdown
+    }
   }
 }

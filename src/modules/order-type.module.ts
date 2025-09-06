@@ -1,4 +1,3 @@
-
 import { Module } from '@nestjs/common';
 import { OrderTypeController } from '../interfaces/http/controllers/order-type.controller';
 import { OrderTypeService } from '../application/services/order-type.service';

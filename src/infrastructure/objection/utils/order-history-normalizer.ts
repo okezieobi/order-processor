@@ -1,22 +1,35 @@
 // Utility to normalize various shapes of order_total_amount_history into
 // a plain array of objects with { time: string, total_amount: number }.
-export function normalizeOrderTotalAmountHistory(input: any): Array<{ time: string; total_amount: number }> {
-  const tryParse = (val: any) => {
-    if (val && typeof val === 'object') return val;
+export type NormalizedOrderHistoryEntry = {
+  time: string;
+  total_amount: number;
+};
+
+export function normalizeOrderTotalAmountHistory(
+  input: unknown,
+): NormalizedOrderHistoryEntry[] {
+  const tryParse = (val: unknown): unknown => {
+    if (val !== null && typeof val === 'object') return val;
     if (typeof val !== 'string') return null;
     try {
       return JSON.parse(val);
     } catch {
       try {
-        const unescaped = val.replace(/\\"/g, '"').replace(/^"/, '').replace(/"$/, '');
-        return JSON.parse(unescaped);
+        const s = val.replace(/\\"/g, '"').replace(/^"/, '').replace(/"$/, '');
+        return JSON.parse(s);
       } catch {
         return null;
       }
     }
   };
 
-  let hist: any = input;
+  const coerceTime = (maybe: unknown): string =>
+    typeof maybe === 'string' || typeof maybe === 'number' ? String(maybe) : '';
+
+  const coerceTotal = (rec: Record<string, unknown> | undefined): number =>
+    Number((rec && (rec.total_amount ?? rec.totalAmount)) ?? 0);
+
+  let hist: unknown = input;
   if (typeof hist === 'string') {
     const p = tryParse(hist);
     hist = Array.isArray(p) ? p : [];
@@ -24,24 +37,16 @@ export function normalizeOrderTotalAmountHistory(input: any): Array<{ time: stri
 
   if (!Array.isArray(hist)) return [];
 
-  const normalized: Array<{ time: string; total_amount: number }> = [];
+  const normalized: NormalizedOrderHistoryEntry[] = [];
   for (const it of hist) {
-    let obj: any = it;
-    if (typeof it === 'string') {
-      const p = tryParse(it);
-      obj = p || { time: '', total_amount: 0 };
-    }
+    let obj: unknown = it;
+    if (typeof it === 'string')
+      obj = tryParse(it) ?? { time: '', total_amount: 0 };
 
-    // Accept both camelCase and snake_case incoming shapes
-    if (obj && obj.totalAmount !== undefined && obj.total_amount === undefined) {
-      obj = { time: obj.time, total_amount: Number(obj.totalAmount) };
-    }
-
-    if (obj && obj.total_amount !== undefined) {
-      normalized.push({ time: String(obj.time), total_amount: Number(obj.total_amount) });
-    } else {
-      normalized.push({ time: String((obj && obj.time) || ''), total_amount: Number((obj && (obj.total_amount ?? obj.totalAmount)) || 0) });
-    }
+    const rec = obj as Record<string, unknown> | undefined;
+    const time = coerceTime(rec?.time);
+    const total_amount = coerceTotal(rec);
+    normalized.push({ time, total_amount });
   }
 
   return normalized;

@@ -10,4 +10,6 @@ async function bootstrap() {
   app.useGlobalFilters(new HttpExceptionFilter());
   await app.listen(process.env.PORT || 3000);
 }
-bootstrap();
+
+// start the application; intentionally not awaited at top-level lint expects explicit handling
+void bootstrap();

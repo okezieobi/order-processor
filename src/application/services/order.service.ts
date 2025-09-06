@@ -75,10 +75,13 @@ export class OrderService {
           const currentTotal = await this.pricing.computeTotal(
             order.calculatedOrderId,
           );
-          const entry = { time: now, totalAmount: Number(currentTotal) } as unknown as OrderEntity['orderTotalAmountHistory'][number];
+          const entry = {
+            time: now,
+            totalAmount: Number(currentTotal),
+          } as unknown as OrderEntity['orderTotalAmountHistory'][number];
           history.push(entry);
           // attach to patch using domain naming; mapper will convert to model field
-          (patch as Partial<OrderEntity>).orderTotalAmountHistory = history as OrderEntity['orderTotalAmountHistory'];
+          patch.orderTotalAmountHistory = history;
           // attach history (normalized) to patch; repository will handle storage format
         }
       } catch {

@@ -1,4 +1,3 @@
-
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { Strategy, ExtractJwt } from 'passport-jwt';
@@ -15,24 +14,30 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
   async validate(payload: { userId: string; roles: string[] }) {
     const user = await this.userService.findById(payload.userId);
-    if (!user) {
-      throw new UnauthorizedException();
-    }
-    // Ensure roles is an array (repository might have stored it as string)
-    if (typeof (user as any).roles === 'string') {
+    if (!user) throw new UnauthorizedException();
+
+    // Narrow roles safely: model may have stored roles as string or array
+    const u = user as unknown as { roles?: unknown; password_hash?: unknown };
+    const rawRoles = u.roles;
+    let safeRoles: string[] = [];
+    if (typeof rawRoles === 'string') {
       try {
-        (user as any).roles = JSON.parse((user as any).roles);
+        const parsed: unknown = JSON.parse(rawRoles);
+        if (Array.isArray(parsed)) safeRoles = parsed as string[];
       } catch {
-        (user as any).roles = [String((user as any).roles)];
+        safeRoles = [String(rawRoles)];
       }
+    } else if (Array.isArray(rawRoles)) {
+      safeRoles = rawRoles as string[];
     }
 
-    // Remove password_hash before returning user object to guards/controllers
-    const safeUser = { ...user } as any;
-    if (safeUser.password_hash) {
-      delete safeUser.password_hash;
-    }
+    // Return a safe user object with password removed
+    const safeUser: Record<string, unknown> = {
+      ...(user as unknown as Record<string, unknown>),
+    };
 
+    safeUser.roles = safeRoles;
+    if ('password_hash' in safeUser) delete safeUser.password_hash;
     return safeUser;
   }
 }
