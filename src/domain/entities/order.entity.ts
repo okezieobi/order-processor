@@ -27,4 +27,8 @@ export interface OrderEntity extends BaseEntity {
   completedTime?: string;
 
   orderTotalAmountHistory: OrderTotalHistoryEntry[];
+  scheduled: boolean;
+  isHidden: boolean;
+  failedTripDetails: Record<string, any>;
+  boxNumber?: string;
 }

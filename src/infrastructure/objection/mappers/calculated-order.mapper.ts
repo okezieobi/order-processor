@@ -6,9 +6,6 @@ type FieldMap = ReadonlyArray<
   readonly [keyof CalculatedOrderEntity, keyof CalculatedOrderModel]
 >;
 
-// Note: The model is missing fields: addressDetails, lat, lng, pickup.
-// The entity is missing the 'items' relation.
-// This mapper is incomplete due to these discrepancies.
 const fieldMap: FieldMap = [
   ['totalAmount', 'total_amount'],
   ['freeDelivery', 'free_delivery'],

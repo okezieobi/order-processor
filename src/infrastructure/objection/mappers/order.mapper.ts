@@ -23,6 +23,10 @@ const fieldMap: FieldMap = [
   ['kitchenCompletedTime', 'kitchen_completed_time'],
   ['kitchenVerifiedTime', 'kitchen_verified_time'],
   ['completedTime', 'completed_time'],
+  ['scheduled', 'scheduled'],
+  ['isHidden', 'is_hidden'],
+  ['failedTripDetails', 'failed_trip_details'],
+  ['boxNumber', 'box_number'],
 ] as const;
 
 export function toOrderEntity(model: OrderModel): OrderEntity {
