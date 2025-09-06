@@ -72,7 +72,7 @@ export class OrderService {
         const history = Array.isArray(order.orderTotalAmountHistory)
           ? order.orderTotalAmountHistory
           : [];
-        history.push({ time: now, total_amount: total });
+        history.push({ time: now, totalAmount: total });
         patch.orderTotalAmountHistory = history;
       }
 
