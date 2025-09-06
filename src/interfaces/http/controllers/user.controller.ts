@@ -1,6 +1,8 @@
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import { Controller, Post, Body, Get, Req } from '@nestjs/common';
+import { ApiBody, ApiResponse } from '@nestjs/swagger';
+
 import { UserService } from '../../../application/services/user.service';
 import { CreateUserDto } from '../dto/users/create-user.dto';
 import { LoginUserDto } from '../dto/users/login-user.dto';
@@ -24,6 +26,25 @@ export class UserController {
 
   @Post('login')
   @Public()
+  @ApiBody({
+    type: LoginUserDto,
+    examples: {
+      a: {
+        summary: 'Example user',
+        value: { email: 'test@example.com', password: 'password123' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'The user has been successfully logged in.',
+    schema: {
+      example: {
+        accessToken: 'your_access_token',
+      },
+    },
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized.' })
   login(@Body() loginUserDto: LoginUserDto) {
     return this.userService.login(loginUserDto);
   }
