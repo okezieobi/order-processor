@@ -14,7 +14,10 @@ import { LoginUserDto } from '../../interfaces/http/dto/users/login-user.dto';
 export class UserService {
   constructor(private readonly userRepository: UserRepository) {}
 
-  async signup(createUserDto: CreateUserDto): Promise<UserEntity> {
+  async signup(
+    createUserDto: CreateUserDto,
+    roles = ['users'],
+  ): Promise<UserEntity> {
     const { email, password, firstName, lastName, phone } = createUserDto;
 
     const existingUser = await this.userRepository.findByEmail(email);
@@ -31,7 +34,7 @@ export class UserService {
       lastName,
       phone,
       isActive: true,
-      roles: ['user'],
+      roles,
     } as UserEntity;
 
     return this.userRepository.create(user);

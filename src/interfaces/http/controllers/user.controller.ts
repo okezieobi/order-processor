@@ -15,6 +15,11 @@ export class UserController {
     return this.userService.signup(createUserDto);
   }
 
+  @Post('signup-admin')
+  signupAdmin(@Body() createUserDto: CreateUserDto) {
+    return this.userService.signup(createUserDto, ['users', 'admin']);
+  }
+
   @Post('login')
   login(@Body() loginUserDto: LoginUserDto) {
     return this.userService.login(loginUserDto);
