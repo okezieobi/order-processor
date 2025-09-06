@@ -24,6 +24,10 @@ export class OrderModel extends BaseModel {
   kitchen_verified_time?: string;
   completed_time?: string;
   order_total_amount_history!: { time: string; total_amount: number }[];
+  scheduled!: boolean;
+  is_hidden!: boolean;
+  failed_trip_details!: Record<string, any>;
+  box_number?: string;
 
   static readonly relationMappings: RelationMappings = {
     calculated_order: {

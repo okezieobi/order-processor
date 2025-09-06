@@ -9,6 +9,7 @@ export async function up(knex: Knex): Promise<void> {
     t.string('phone').nullable();
     t.string('password_hash').notNullable();
     t.boolean('is_active').defaultTo(true);
+    t.jsonb('roles').defaultTo('[]');
     t.timestamps(true, true);
   });
 
