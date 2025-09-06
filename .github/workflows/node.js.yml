@@ -10,21 +10,6 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
-    services:
-      postgres:
-        image: postgres:15-alpine
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: order_processor
-        ports:
-          - 5432:5432
-        options: >- # this is a multi-line string
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
     steps:
       - uses: actions/checkout@v4
       - name: Use Node.js 20.x
@@ -32,14 +17,32 @@ jobs:
         with:
           node-version: 20.x
 
+      - name: Start services with docker-compose
+        run: |
+          docker compose -f docker-compose.yml up -d --build
+
       - name: Wait for PostgreSQL
-        run: while ! pg_isready -h localhost -p 5432; do sleep 1; done;
+        run: |
+          until pg_isready -h localhost -p 5432; do
+            echo "waiting for postgres..."
+            sleep 1
+          done
 
       - name: Install dependencies
         run: npm ci
 
       - name: Run migrations
+        env:
+          DB_HOST: localhost
+          DB_USER: postgres
+          DB_PASS: postgres
+          DB_NAME: order_processor
         run: npm run migrate
 
       - name: Run E2E tests
+        env:
+          DB_HOST: localhost
+          DB_USER: postgres
+          DB_PASS: postgres
+          DB_NAME: order_processor
         run: npm run test:e2e
