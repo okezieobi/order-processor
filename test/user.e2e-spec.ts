@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest'; // Changed import
@@ -76,7 +79,9 @@ describe('UserController (e2e)', () => {
         .send(user)
         .expect(409) // Conflict
         .expect((res) => {
-          expect(res.body.message).toEqual('User with this email already exists');
+          expect(res.body.message).toEqual(
+            'User with this email already exists',
+          );
         });
     });
   });
