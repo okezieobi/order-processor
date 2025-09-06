@@ -35,10 +35,6 @@ describe('UserController (e2e)', () => {
     await db.destroy();
   });
 
-  afterAll(async () => {
-    await app.close();
-  });
-
   const user = {
     email: 'test@example.com',
     password: 'password123',
