@@ -37,7 +37,11 @@ export class UserService {
       roles: JSON.stringify(roles) as unknown as string[],
     };
 
-    return this.userRepository.create(user);
+  const created = await this.userRepository.create(user);
+  // debug: log created user entity (helps trace missing id during tests)
+  // eslint-disable-next-line no-console
+  console.log('DEBUG created user entity:', created);
+  return created;
   }
 
   async findById(id: string): Promise<UserEntity | null> {

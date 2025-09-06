@@ -64,7 +64,10 @@ describe('OrderController (e2e)', () => {
     const userRes = await request(app.getHttpServer())
       .post('/users/signup')
       .send(createUserDto);
-    createdUserId = userRes.body.id;
+  createdUserId = userRes.body.id;
+  // debug: inspect signup response
+  // eslint-disable-next-line no-console
+  console.log('DEBUG signup response:', userRes.body);
 
     const calculatedOrderRes = await request(app.getHttpServer())
       .post('/calculated-orders')
@@ -79,6 +82,8 @@ describe('OrderController (e2e)', () => {
     createOrderDto.userId = createdUserId;
     createOrderDto.calculatedOrderId = createdCalculatedOrderId;
     createOrderDto.orderTypeId = createdOrderTypeId;
+  // eslint-disable-next-line no-console
+  console.log('DEBUG prepared createOrderDto:', createOrderDto);
   });
 
   afterAll(async () => {
