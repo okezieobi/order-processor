@@ -4,6 +4,7 @@ import type { OrderEntity } from '../../../domain/entities/order.entity';
 import { OrderModel } from '../models/order.model';
 import { OrderLogModel } from '../models/order-log.model';
 import { toOrderEntity, fromOrderEntityPatch } from '../mappers/order.mapper';
+import { normalizeOrderTotalAmountHistory } from '../utils/order-history-normalizer';
 import { Knex } from 'knex';
 
 export class ObjectionOrderRepository implements OrderRepository {
@@ -14,63 +15,13 @@ export class ObjectionOrderRepository implements OrderRepository {
     const modelPatch = fromOrderEntityPatch(order);
     // Normalize order_total_amount_history to ensure plain JSON objects
     if ((modelPatch as any).order_total_amount_history !== undefined) {
-      let hist: any = (modelPatch as any).order_total_amount_history;
-
-      const tryParse = (val: any) => {
-        if (val && typeof val === 'object') return val;
-        if (typeof val !== 'string') return null;
-        // try direct parse
-        try {
-          return JSON.parse(val);
-        } catch {
-          // try to unescape common double-encoding
-          try {
-            const unescaped = val.replace(/\\"/g, '"').replace(/^"/, '').replace(/"$/, '');
-            return JSON.parse(unescaped);
-          } catch {
-            return null;
-          }
-        }
-      };
-
-      if (typeof hist === 'string') {
-        const p = tryParse(hist);
-        hist = Array.isArray(p) ? p : [];
-      }
-
-      if (Array.isArray(hist)) {
-        const normalized = [] as any[];
-        for (const it of hist) {
-          // per-element inspection and coercion
-          let obj = it;
-          // element inspection
-          if (typeof it === 'string') {
-            const p = tryParse(it);
-            if (p) {
-              obj = p;
-            } else {
-              obj = { time: '', total_amount: 0 };
-            }
-          }
-          // ensure keys
-          if (obj && obj.totalAmount !== undefined && obj.total_amount === undefined) {
-            obj = { time: obj.time, total_amount: Number(obj.totalAmount) };
-          }
-          if (obj && obj.total_amount !== undefined) {
-            normalized.push({ time: String(obj.time), total_amount: Number(obj.total_amount) });
-          } else {
-            normalized.push({ time: String((obj && obj.time) || ''), total_amount: Number((obj && (obj.total_amount ?? obj.totalAmount)) || 0) });
-          }
-        }
-        (modelPatch as any).order_total_amount_history = normalized;
-        // Ensure we pass a JSONB literal to PG to avoid double-encoding issues
-        try {
-          (modelPatch as any).order_total_amount_history = OrderModel.knex().raw('?::jsonb', [JSON.stringify(normalized)]);
-        } catch (e) {
-          // if knex/raw fails for any reason, leave the normalized array
-        }
-      } else {
-        (modelPatch as any).order_total_amount_history = [];
+      const normalized = normalizeOrderTotalAmountHistory((modelPatch as any).order_total_amount_history);
+      (modelPatch as any).order_total_amount_history = normalized;
+      // Ensure we pass a JSONB literal to PG to avoid double-encoding issues
+      try {
+        (modelPatch as any).order_total_amount_history = OrderModel.knex().raw('?::jsonb', [JSON.stringify(normalized)]);
+      } catch {
+        // if knex/raw fails for any reason, leave the normalized array
       }
     }
     const created = await OrderModel.query(tx).insert(modelPatch);
@@ -83,60 +34,12 @@ export class ObjectionOrderRepository implements OrderRepository {
   async update(id: string, patch: Partial<OrderEntity>, tx?: Knex.Transaction) {
     const modelPatch = fromOrderEntityPatch(patch);
     if ((modelPatch as any).order_total_amount_history !== undefined) {
-      let hist: any = (modelPatch as any).order_total_amount_history;
-
-      const tryParse = (val: any) => {
-        if (val && typeof val === 'object') return val;
-        if (typeof val !== 'string') return null;
-        try {
-          return JSON.parse(val);
-        } catch {
-          try {
-            const unescaped = val.replace(/\\"/g, '"').replace(/^"/, '').replace(/"$/, '');
-            return JSON.parse(unescaped);
-          } catch {
-            return null;
-          }
-        }
-      };
-
-      if (typeof hist === 'string') {
-        const p = tryParse(hist);
-        hist = Array.isArray(p) ? p : [];
-      }
-
-      if (Array.isArray(hist)) {
-        const normalized: any[] = [];
-        for (const it of hist) {
-          // per-element inspection and coercion
-          let obj = it;
-          // element inspection
-          if (typeof it === 'string') {
-            const p = tryParse(it);
-            if (p) {
-              obj = p;
-            } else {
-              obj = { time: '', total_amount: 0 };
-            }
-          }
-          if (obj && obj.totalAmount !== undefined && obj.total_amount === undefined) {
-            obj = { time: obj.time, total_amount: Number(obj.totalAmount) };
-          }
-          if (obj && obj.total_amount !== undefined) {
-            normalized.push({ time: String(obj.time), total_amount: Number(obj.total_amount) });
-          } else {
-            normalized.push({ time: String((obj && obj.time) || ''), total_amount: Number((obj && (obj.total_amount ?? obj.totalAmount)) || 0) });
-          }
-        }
-        (modelPatch as any).order_total_amount_history = normalized;
-        // Ensure we pass a JSONB literal to PG to avoid double-encoding issues
-        try {
-          (modelPatch as any).order_total_amount_history = OrderModel.knex().raw('?::jsonb', [JSON.stringify(normalized)]);
-        } catch (e) {
-          // ignore
-        }
-      } else {
-        (modelPatch as any).order_total_amount_history = [];
+      const normalized = normalizeOrderTotalAmountHistory((modelPatch as any).order_total_amount_history);
+      (modelPatch as any).order_total_amount_history = normalized;
+      try {
+        (modelPatch as any).order_total_amount_history = OrderModel.knex().raw('?::jsonb', [JSON.stringify(normalized)]);
+      } catch {
+        // ignore
       }
     }
     // Temporary debug: print order_total_amount_history payload to diagnose PG json errors
