@@ -34,14 +34,17 @@ export class UserService {
       lastName,
       phone,
       isActive: true,
-      roles: JSON.stringify(roles) as unknown as string[],
+      roles,
     };
 
-  const created = await this.userRepository.create(user);
-  // debug: log created user entity (helps trace missing id during tests)
-  // eslint-disable-next-line no-console
-  console.log('DEBUG created user entity:', created);
-  return created;
+    const created = await this.userRepository.create(user);
+    // Remove password_hash before returning to callers (don't leak hashes in API responses)
+    if ((created as unknown as Record<string, unknown>)['password_hash']) {
+      const rec = created as unknown as Record<string, unknown>;
+      delete rec['password_hash'];
+    }
+
+    return created;
   }
 
   async findById(id: string): Promise<UserEntity | null> {

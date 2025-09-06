@@ -60,14 +60,14 @@ describe('OrderController (e2e)', () => {
     app = moduleFixture.createNestApplication();
     await app.init();
 
+  // ensure a unique email for each test run to avoid "User with this email already exists"
+  createUserDto.email = `order_test_user_${Date.now()}@example.com`;
+
     // Create dependencies for Order
     const userRes = await request(app.getHttpServer())
       .post('/users/signup')
       .send(createUserDto);
   createdUserId = userRes.body.id;
-  // debug: inspect signup response
-  // eslint-disable-next-line no-console
-  console.log('DEBUG signup response:', userRes.body);
 
     const calculatedOrderRes = await request(app.getHttpServer())
       .post('/calculated-orders')
@@ -82,8 +82,7 @@ describe('OrderController (e2e)', () => {
     createOrderDto.userId = createdUserId;
     createOrderDto.calculatedOrderId = createdCalculatedOrderId;
     createOrderDto.orderTypeId = createdOrderTypeId;
-  // eslint-disable-next-line no-console
-  console.log('DEBUG prepared createOrderDto:', createOrderDto);
+  // prepared createOrderDto
   });
 
   afterAll(async () => {

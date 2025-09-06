@@ -18,6 +18,21 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     if (!user) {
       throw new UnauthorizedException();
     }
-    return user;
+    // Ensure roles is an array (repository might have stored it as string)
+    if (typeof (user as any).roles === 'string') {
+      try {
+        (user as any).roles = JSON.parse((user as any).roles);
+      } catch {
+        (user as any).roles = [String((user as any).roles)];
+      }
+    }
+
+    // Remove password_hash before returning user object to guards/controllers
+    const safeUser = { ...user } as any;
+    if (safeUser.password_hash) {
+      delete safeUser.password_hash;
+    }
+
+    return safeUser;
   }
 }

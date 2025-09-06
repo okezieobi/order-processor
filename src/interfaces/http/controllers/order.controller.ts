@@ -3,12 +3,14 @@ import {
   Controller,
   Get,
   Post,
+  HttpCode,
   Put,
   Delete,
   Param,
   Body,
   Query,
   UsePipes,
+  NotFoundException,
 } from '@nestjs/common';
 import { OrderService } from '../../../application/services/order.service';
 import { JoiValidationPipe } from '../../../common/pipes/joi-validation.pipe';
@@ -27,8 +29,10 @@ export class OrderController {
   }
 
   @Get(':id')
-  findById(@Param('id') id: string) {
-    return this.service.findById(id);
+  async findById(@Param('id') id: string) {
+    const found = await this.service.findById(id);
+    if (!found) throw new NotFoundException('Order not found');
+    return found;
   }
 
   @Put(':id')
@@ -47,6 +51,7 @@ export class OrderController {
   }
 
   @Post(':id/process')
+  @HttpCode(200)
   process(
     @Param('id') id: string,
     @Query('action')

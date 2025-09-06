@@ -25,6 +25,20 @@ export function toUserEntity(model: UserModel): UserEntity {
     entity[entityKey] = model[modelKey] as never;
   }
 
+  // Normalize roles: Postgres/Objection may return jsonb as a string.
+  const rawRoles = (model as any).roles;
+  if (typeof rawRoles === 'string') {
+    try {
+      entity.roles = JSON.parse(rawRoles);
+    } catch {
+      entity.roles = [String(rawRoles)];
+    }
+  } else if (Array.isArray(rawRoles)) {
+    entity.roles = rawRoles as string[];
+  } else {
+    entity.roles = [];
+  }
+
   // Note: 'orders' from the model is not mapped to the entity.
   // Note: 'password_hash' is intentionally not exposed in the entity.
 

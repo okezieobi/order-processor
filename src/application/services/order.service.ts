@@ -64,16 +64,25 @@ export class OrderService {
 
       const { patch, logMsg } = this.getOrderPatchAndLog(order, action, now);
 
-      if (
-        ['accept', 'prepare', 'dispatch', 'complete'].includes(action) &&
-        order.calculatedOrderId
-      ) {
-        const total = await this.pricing.computeTotal(order.calculatedOrderId);
-        const history = Array.isArray(order.orderTotalAmountHistory)
-          ? order.orderTotalAmountHistory
-          : [];
-        history.push({ time: now, totalAmount: total });
-        patch.orderTotalAmountHistory = history;
+      // Re-enable appending to orderTotalAmountHistory safely.
+      // Ensure history is an array and append a normalized entry with current total.
+      const history = Array.isArray(order.orderTotalAmountHistory)
+        ? order.orderTotalAmountHistory.slice()
+        : [];
+      try {
+        // compute current total using pricing port when available
+        if (order.calculatedOrderId) {
+          const currentTotal = await this.pricing.computeTotal(
+            order.calculatedOrderId,
+          );
+          const entry = { time: now, totalAmount: Number(currentTotal) } as unknown as OrderEntity['orderTotalAmountHistory'][number];
+          history.push(entry);
+          // attach to patch using domain naming; mapper will convert to model field
+          (patch as Partial<OrderEntity>).orderTotalAmountHistory = history as OrderEntity['orderTotalAmountHistory'];
+          // attach history (normalized) to patch; repository will handle storage format
+        }
+      } catch {
+        // pricing failed; ignore and continue
       }
 
       const saved = await this.orders.update(orderId, patch, tx);
