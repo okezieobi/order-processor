@@ -30,7 +30,13 @@ Objection.js models for all required entities are located in `src/infrastructure
 - `Brand` -> `brand.model.ts`
 - `OrderType` -> `order-type.model.ts`
 
-### 3. CRUD Operations
+### 3. Domain Entities and Repository Abstractions
+
+The project defines its core domain entities in `src/domain/entities`. These are plain classes that represent the core business objects of the application, such as `Order`, `Meal`, and `User`. They are decoupled from any specific database implementation.
+
+To maintain this separation, repository interfaces (ports) are defined in `src/domain/repositories`. These interfaces define the contract for data access operations, such as `findById` or `save`. The concrete implementations of these repositories are located in `src/infrastructure/objection/repositories`, which use Objection.js to interact with the database. This approach allows the application's core logic to remain independent of the data access layer.
+
+### 4. CRUD Operations
 
 The project follows a layered architecture to provide clear separation of concerns:
 
