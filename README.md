@@ -1,3 +1,92 @@
+# Senior Backend Lead Test: Analysis and Architecture
+
+This section provides an analysis of the existing codebase against the test requirements and outlines a proposed system architecture.
+
+## TASK 1: Project Implementation Analysis
+
+This section analyzes how the current project implements the requirements outlined in Task 1.
+
+### 1. Setup
+
+The project is built with NestJS and uses Objection.js with Knex for database management. The `knexfile.ts` and `package.json` confirm the use of a PostgreSQL database.
+
+### 2. Data Modeling with Objection.js
+
+Objection.js models for all required entities are located in `src/infrastructure/objection/models`. Each model, like `OrderModel` in `order.model.ts`, extends a `BaseModel` to ensure consistency.
+
+### 3. CRUD Operations
+
+The project implements a standard layered architecture. For each entity, there is a controller in `src/interfaces/http/controllers`, a service in `src/application/services`, and a repository in `src/infrastructure/objection/repositories`. This structure provides clear separation of concerns for handling CRUD operations.
+
+### 4. DTOs and Validations
+
+DTOs are defined in `src/interfaces/http/dto`. These DTOs use `class-validator` decorators for validation. For more complex scenarios, such as in the `OrderController`, a `JoiValidationPipe` is used with a custom schema.
+
+### 5. Middleware and Utilities
+
+A `RequestLoggerMiddleware` is implemented at `src/common/middleware/request-logger.middleware.ts` and is configured in `AppModule` to log all incoming requests.
+
+### 6. Business Logic
+
+The `OrderService` (`src/application/services/order.service.ts`) contains the `processOrder` method, which encapsulates the core business logic for processing an order. It coordinates with the repository layer to persist state changes and the events layer (`order-events.gateway.ts`) to emit real-time updates.
+
+### 7. Testing
+
+The project includes a suite of end-to-end tests in the `test/` directory (e.g., `order.e2e-spec.ts`). These tests cover the core functionality of the API endpoints.
+
+-   **Continuous Integration**: The project is configured to run these tests automatically using GitHub Actions, as defined in `.github/workflows/node.js.yml`. The status of the latest test run is displayed by the "Node.js CI" badge at the top of this README, providing immediate feedback on the health of the codebase.
+
+### Swagger Implementation
+
+API documentation is provided using Swagger and is configured in `src/main.ts`. The UI is available at `/api`, and the controllers are decorated with `@ApiBody` and `@ApiResponse` to provide clear examples.
+
+## TASK 2: System Architecture Design
+
+This section outlines a high-level architecture for a large-scale, global order processing system.
+
+### Architectural Goals
+
+- **Scalability**: Handle millions of orders daily.
+- **Resilience**: Tolerate failures and maintain high availability.
+- **Maintainability**: Allow for independent development and deployment of components.
+
+### High-Level Architecture
+
+A microservices architecture is the most suitable approach to meet these goals. The main components would be:
+
+- **API Gateway**: A single, unified entry point for all client applications. It handles routing, authentication, and rate limiting.
+- **Load Balancers**: Distribute traffic across the available instances of each microservice, preventing any single instance from being a bottleneck.
+- **Microservices**: The system would be decomposed into several independent services, each responsible for a specific business domain:
+    - **Order Service**: Manages the entire lifecycle of an order.
+    - **Kitchen Service**: Handles kitchen-specific logic, including order preparation and dispatch.
+    - **User Service**: Manages user accounts, profiles, and authentication.
+    - **Payment Service**: Integrates with payment providers to process transactions securely.
+- **Message Broker (e.g., RabbitMQ, Kafka)**: Facilitates asynchronous communication between microservices. This decouples services and improves fault tolerance.
+- **Distributed Cache (e.g., Redis)**: Caches frequently accessed data to reduce latency and database load.
+
+### Data Storage
+
+For a system of this scale, a single database would not be sufficient. Each microservice would own its data, and the data stores would be scaled independently. For the Order and Kitchen services, a sharded PostgreSQL database (sharded by `region` or `brand_id`) would allow for horizontal scaling. Read replicas would be used to handle high read volumes.
+
+### Real-time Updates and Data Consistency
+
+WebSockets would be used to provide real-time updates to clients. A dedicated WebSocket service would subscribe to events from the message broker and push updates to the relevant clients. To ensure data consistency across services, the Saga pattern would be used for distributed transactions.
+
+### Resilience and Security
+
+- **Resilience**: The system would be designed for high availability by running multiple instances of each service and database. Health checks and circuit breakers would be used to detect and isolate failures.
+- **Security**: Security is a primary concern. The system would use JWT for authentication, similar to the implementation in `jwt.strategy.ts`. Role-based access control (RBAC), as seen in `roles.guard.ts`, would be used to enforce authorization. All sensitive data would be encrypted both in transit and at rest.
+
+## Bonus Tasks
+
+- **Global Exception Filter**: The project correctly implements a global exception filter in `src/common/filters/http-exception.filter.ts`, which is registered in `main.ts`. This ensures consistent error handling across the application.
+
+- **Authorization**: The use of the `@Roles()` decorator and `RolesGuard` provides a robust mechanism for endpoint authorization. This is demonstrated in controllers like `OrderController`, where administrative endpoints are protected.
+
+- **Efficient Queries**: The repository pattern is used, which is the correct place to implement efficient queries. By using Objection.js features like `withGraphFetched` or `joinEager` within the repository methods, the application can avoid common performance pitfalls like the N+1 query problem.
+
+---
+
 <p align="center">
   <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
 </p>
