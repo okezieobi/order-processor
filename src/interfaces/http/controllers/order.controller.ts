@@ -11,9 +11,8 @@ import {
   Body,
   Query,
   UsePipes,
-  NotFoundException,
   Req,
-  ForbiddenException,
+  UseGuards,
 } from '@nestjs/common';
 import type { Request } from 'express';
 import { OrderService } from '../../../application/services/order.service';
@@ -22,6 +21,7 @@ import { JoiValidationPipe } from '../../../common/pipes/joi-validation.pipe';
 import { createOrderSchema } from '../dto/orders/joi-schema';
 import { CreateOrderDto } from '../dto/orders/create-order.dto';
 import { UpdateOrderDto } from '../dto/orders/update-order.dto';
+import { OrderOwnershipGuard } from '../../../common/auth/order-ownership.guard';
 
 @Controller('orders')
 export class OrderController {
@@ -55,22 +55,15 @@ export class OrderController {
   }
 
   @Get(':id')
+  @UseGuards(OrderOwnershipGuard)
   @ApiResponse({ status: 200, description: 'The found order record' })
   @ApiResponse({ status: 404, description: 'Order not found.' })
-  async findById(@Param('id') id: string, @Req() req: Request) {
-    const found = await this.service.findById(id);
-    if (!found) throw new NotFoundException('Order not found');
-    const maybeUser = req.user as unknown;
-    if (!maybeUser) throw new ForbiddenException('Insufficient permissions');
-    const user = maybeUser as { id?: string; roles?: unknown };
-    if (Array.isArray(user.roles) && user.roles.includes('admins'))
-      return found;
-    if (user.id !== found.userId)
-      throw new ForbiddenException('Insufficient permissions');
-    return found;
+  findById(@Req() req: Request) {
+    return req.order;
   }
 
   @Put(':id')
+  @UseGuards(OrderOwnershipGuard)
   @ApiBody({
     type: UpdateOrderDto,
     examples: { a: { summary: 'Update order', value: { paid: true } } },
@@ -81,40 +74,19 @@ export class OrderController {
   })
   @ApiResponse({ status: 403, description: 'Forbidden.' })
   @ApiResponse({ status: 404, description: 'Order not found.' })
-  async update(
-    @Param('id') id: string,
-    @Body() dto: UpdateOrderDto,
-    @Req() req: Request,
-  ) {
-    const existing = await this.service.findById(id);
-    if (!existing) throw new NotFoundException('Order not found');
-    const maybeUser = req.user as unknown;
-    if (!maybeUser) throw new ForbiddenException('Insufficient permissions');
-    const user = maybeUser as { id?: string; roles?: unknown };
-    if (!Array.isArray(user.roles) || !user.roles.includes('admins')) {
-      if (user.id !== existing.userId)
-        throw new ForbiddenException('Insufficient permissions');
-    }
+  async update(@Param('id') id: string, @Body() dto: UpdateOrderDto) {
     return this.service.update(id, dto);
   }
 
   @Delete(':id')
+  @UseGuards(OrderOwnershipGuard)
   @ApiResponse({
     status: 200,
     description: 'The order has been successfully deleted.',
   })
   @ApiResponse({ status: 403, description: 'Forbidden.' })
   @ApiResponse({ status: 404, description: 'Order not found.' })
-  async remove(@Param('id') id: string, @Req() req: Request) {
-    const existing = await this.service.findById(id);
-    if (!existing) throw new NotFoundException('Order not found');
-    const maybeUser = req.user as unknown;
-    if (!maybeUser) throw new ForbiddenException('Insufficient permissions');
-    const user = maybeUser as { id?: string; roles?: unknown };
-    if (!Array.isArray(user.roles) || !user.roles.includes('admins')) {
-      if (user.id !== existing.userId)
-        throw new ForbiddenException('Insufficient permissions');
-    }
+  async remove(@Param('id') id: string) {
     return this.service.remove(id);
   }
 
@@ -126,6 +98,7 @@ export class OrderController {
   }
 
   @Post(':id/process')
+  @UseGuards(OrderOwnershipGuard)
   @HttpCode(200)
   @ApiResponse({
     status: 200,
@@ -137,17 +110,7 @@ export class OrderController {
     @Param('id') id: string,
     @Query('action')
     action: 'accept' | 'prepare' | 'dispatch' | 'complete' | 'cancel',
-    @Req() req: Request,
   ) {
-    const existing = await this.service.findById(id);
-    if (!existing) throw new NotFoundException('Order not found');
-    const maybeUser = req.user as unknown;
-    if (!maybeUser) throw new ForbiddenException('Insufficient permissions');
-    const user = maybeUser as { id?: string; roles?: unknown };
-    if (!Array.isArray(user.roles) || !user.roles.includes('admins')) {
-      if (user.id !== existing.userId)
-        throw new ForbiddenException('Insufficient permissions');
-    }
     return this.service.processOrder(id, action);
   }
 }

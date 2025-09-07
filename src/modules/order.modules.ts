@@ -11,10 +11,13 @@ import { ObjectionUnitOfWork } from '../infrastructure/objection/unit-of-work/ob
 import { OrderEvents } from '../domain/ports/order-events.port';
 import { OrderGateway } from '../infrastructure/events/order-events.gateway';
 
+import { OrderOwnershipGuard } from '../common/auth/order-ownership.guard';
+
 @Module({
   controllers: [OrderController],
   providers: [
     OrderService,
+    OrderOwnershipGuard,
     { provide: OrderRepository, useClass: ObjectionOrderRepository },
     {
       provide: CalculatedOrderPricingPort,
