@@ -21,8 +21,14 @@ export class BrandController {
 
   @Post()
   @Roles('admins')
-  @ApiBody({ type: CreateBrandDto, examples: { a: { summary: 'Create brand', value: { name: 'Brand X' } } } })
-  @ApiResponse({ status: 201, description: 'The brand has been successfully created.' })
+  @ApiBody({
+    type: CreateBrandDto,
+    examples: { a: { summary: 'Create brand', value: { name: 'Brand X' } } },
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'The brand has been successfully created.',
+  })
   @ApiResponse({ status: 403, description: 'Forbidden.' })
   create(@Body() data: CreateBrandDto) {
     return this.service.create(data);
@@ -37,8 +43,14 @@ export class BrandController {
 
   @Put(':id')
   @Roles('admins')
-  @ApiBody({ type: UpdateBrandDto, examples: { a: { summary: 'Update brand', value: { name: 'Brand Y' } } } })
-  @ApiResponse({ status: 200, description: 'The brand has been successfully updated.' })
+  @ApiBody({
+    type: UpdateBrandDto,
+    examples: { a: { summary: 'Update brand', value: { name: 'Brand Y' } } },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'The brand has been successfully updated.',
+  })
   @ApiResponse({ status: 403, description: 'Forbidden.' })
   update(@Param('id') id: string, @Body() data: UpdateBrandDto) {
     return this.service.update(id, data);
@@ -46,7 +58,10 @@ export class BrandController {
 
   @Delete(':id')
   @Roles('admins')
-  @ApiResponse({ status: 200, description: 'The brand has been successfully deleted.' })
+  @ApiResponse({
+    status: 200,
+    description: 'The brand has been successfully deleted.',
+  })
   @ApiResponse({ status: 403, description: 'Forbidden.' })
   remove(@Param('id') id: string) {
     return this.service.remove(id);

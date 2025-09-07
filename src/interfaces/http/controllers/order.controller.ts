@@ -30,8 +30,25 @@ export class OrderController {
   @Post()
   @Roles('users', 'admins')
   @UsePipes(new JoiValidationPipe(createOrderSchema))
-  @ApiBody({ type: CreateOrderDto, examples: { a: { summary: 'Create order', value: { userId: 'an_user_id', orderCode: 'an_order_code', calculatedOrderId: 'a_calc_order_id', orderTypeId: 'an_order_type_id', paid: false } } } })
-  @ApiResponse({ status: 201, description: 'The order has been successfully created.' })
+  @ApiBody({
+    type: CreateOrderDto,
+    examples: {
+      a: {
+        summary: 'Create order',
+        value: {
+          userId: 'an_user_id',
+          orderCode: 'an_order_code',
+          calculatedOrderId: 'a_calc_order_id',
+          orderTypeId: 'an_order_type_id',
+          paid: false,
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'The order has been successfully created.',
+  })
   @ApiResponse({ status: 403, description: 'Forbidden.' })
   create(@Body() dto: CreateOrderDto) {
     return this.service.create(dto);
@@ -54,8 +71,14 @@ export class OrderController {
   }
 
   @Put(':id')
-  @ApiBody({ type: UpdateOrderDto, examples: { a: { summary: 'Update order', value: { paid: true } } } })
-  @ApiResponse({ status: 200, description: 'The order has been successfully updated.' })
+  @ApiBody({
+    type: UpdateOrderDto,
+    examples: { a: { summary: 'Update order', value: { paid: true } } },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'The order has been successfully updated.',
+  })
   @ApiResponse({ status: 403, description: 'Forbidden.' })
   @ApiResponse({ status: 404, description: 'Order not found.' })
   async update(
@@ -76,7 +99,10 @@ export class OrderController {
   }
 
   @Delete(':id')
-  @ApiResponse({ status: 200, description: 'The order has been successfully deleted.' })
+  @ApiResponse({
+    status: 200,
+    description: 'The order has been successfully deleted.',
+  })
   @ApiResponse({ status: 403, description: 'Forbidden.' })
   @ApiResponse({ status: 404, description: 'Order not found.' })
   async remove(@Param('id') id: string, @Req() req: Request) {
@@ -101,7 +127,10 @@ export class OrderController {
 
   @Post(':id/process')
   @HttpCode(200)
-  @ApiResponse({ status: 200, description: 'The order has been successfully processed.' })
+  @ApiResponse({
+    status: 200,
+    description: 'The order has been successfully processed.',
+  })
   @ApiResponse({ status: 403, description: 'Forbidden.' })
   @ApiResponse({ status: 404, description: 'Order not found.' })
   async process(

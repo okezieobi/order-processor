@@ -20,8 +20,16 @@ export class OrderTypeController {
 
   @Post()
   @Roles('admins')
-  @ApiBody({ type: CreateOrderTypeDto, examples: { a: { summary: 'Create order type', value: { name: 'Delivery' } } } })
-  @ApiResponse({ status: 201, description: 'The order type has been successfully created.' })
+  @ApiBody({
+    type: CreateOrderTypeDto,
+    examples: {
+      a: { summary: 'Create order type', value: { name: 'Delivery' } },
+    },
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'The order type has been successfully created.',
+  })
   @ApiResponse({ status: 403, description: 'Forbidden.' })
   create(@Body() data: CreateOrderTypeDto) {
     return this.service.create(data);
@@ -36,8 +44,16 @@ export class OrderTypeController {
 
   @Put(':id')
   @Roles('admins')
-  @ApiBody({ type: UpdateOrderTypeDto, examples: { a: { summary: 'Update order type', value: { name: 'Pickup' } } } })
-  @ApiResponse({ status: 200, description: 'The order type has been successfully updated.' })
+  @ApiBody({
+    type: UpdateOrderTypeDto,
+    examples: {
+      a: { summary: 'Update order type', value: { name: 'Pickup' } },
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'The order type has been successfully updated.',
+  })
   @ApiResponse({ status: 403, description: 'Forbidden.' })
   update(@Param('id') id: string, @Body() data: UpdateOrderTypeDto) {
     return this.service.update(id, data);
@@ -45,7 +61,10 @@ export class OrderTypeController {
 
   @Delete(':id')
   @Roles('admins')
-  @ApiResponse({ status: 200, description: 'The order type has been successfully deleted.' })
+  @ApiResponse({
+    status: 200,
+    description: 'The order type has been successfully deleted.',
+  })
   @ApiResponse({ status: 403, description: 'Forbidden.' })
   remove(@Param('id') id: string) {
     return this.service.remove(id);

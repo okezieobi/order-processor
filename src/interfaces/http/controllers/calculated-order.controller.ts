@@ -20,15 +20,38 @@ export class CalculatedOrderController {
 
   @Post()
   @Roles('users', 'admins')
-  @ApiBody({ type: CreateCalculatedOrderDto, examples: { a: { summary: 'Create calculated order', value: { totalAmount: 100, freeDelivery: false, deliveryFee: 10, serviceCharge: 5, addressDetails: {}, lat: '123', lng: '456', pickup: false } } } })
-  @ApiResponse({ status: 201, description: 'The calculated order has been successfully created.' })
+  @ApiBody({
+    type: CreateCalculatedOrderDto,
+    examples: {
+      a: {
+        summary: 'Create calculated order',
+        value: {
+          totalAmount: 100,
+          freeDelivery: false,
+          deliveryFee: 10,
+          serviceCharge: 5,
+          addressDetails: {},
+          lat: '123',
+          lng: '456',
+          pickup: false,
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'The calculated order has been successfully created.',
+  })
   @ApiResponse({ status: 403, description: 'Forbidden.' })
   create(@Body() data: CreateCalculatedOrderDto) {
     return this.service.create(data);
   }
 
   @Get(':id')
-  @ApiResponse({ status: 200, description: 'The found calculated order record' })
+  @ApiResponse({
+    status: 200,
+    description: 'The found calculated order record',
+  })
   @ApiResponse({ status: 404, description: 'Calculated order not found.' })
   findById(@Param('id') id: string) {
     return this.service.findById(id);
@@ -36,8 +59,16 @@ export class CalculatedOrderController {
 
   @Put(':id')
   @Roles('admins')
-  @ApiBody({ type: UpdateCalculatedOrderDto, examples: { a: { summary: 'Update calculated order', value: { totalAmount: 120 } } } })
-  @ApiResponse({ status: 200, description: 'The calculated order has been successfully updated.' })
+  @ApiBody({
+    type: UpdateCalculatedOrderDto,
+    examples: {
+      a: { summary: 'Update calculated order', value: { totalAmount: 120 } },
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'The calculated order has been successfully updated.',
+  })
   @ApiResponse({ status: 403, description: 'Forbidden.' })
   update(@Param('id') id: string, @Body() data: UpdateCalculatedOrderDto) {
     return this.service.update(id, data);
@@ -45,7 +76,10 @@ export class CalculatedOrderController {
 
   @Delete(':id')
   @Roles('admins')
-  @ApiResponse({ status: 200, description: 'The calculated order has been successfully deleted.' })
+  @ApiResponse({
+    status: 200,
+    description: 'The calculated order has been successfully deleted.',
+  })
   @ApiResponse({ status: 403, description: 'Forbidden.' })
   remove(@Param('id') id: string) {
     return this.service.remove(id);

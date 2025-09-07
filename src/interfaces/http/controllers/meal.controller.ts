@@ -21,8 +21,24 @@ export class MealController {
 
   @Post()
   @Roles('admins')
-  @ApiBody({ type: CreateMealDto, examples: { a: { summary: 'Create meal', value: { name: 'Burger', active: true, brandId: 'a_brand_id', amount: 10 } } } })
-  @ApiResponse({ status: 201, description: 'The meal has been successfully created.' })
+  @ApiBody({
+    type: CreateMealDto,
+    examples: {
+      a: {
+        summary: 'Create meal',
+        value: {
+          name: 'Burger',
+          active: true,
+          brandId: 'a_brand_id',
+          amount: 10,
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'The meal has been successfully created.',
+  })
   @ApiResponse({ status: 403, description: 'Forbidden.' })
   create(@Body() data: CreateMealDto) {
     return this.service.create(data);
@@ -37,8 +53,19 @@ export class MealController {
 
   @Put(':id')
   @Roles('admins')
-  @ApiBody({ type: UpdateMealDto, examples: { a: { summary: 'Update meal', value: { name: 'Cheeseburger', amount: 12 } } } })
-  @ApiResponse({ status: 200, description: 'The meal has been successfully updated.' })
+  @ApiBody({
+    type: UpdateMealDto,
+    examples: {
+      a: {
+        summary: 'Update meal',
+        value: { name: 'Cheeseburger', amount: 12 },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'The meal has been successfully updated.',
+  })
   @ApiResponse({ status: 403, description: 'Forbidden.' })
   update(@Param('id') id: string, @Body() data: UpdateMealDto) {
     return this.service.update(id, data);
@@ -46,7 +73,10 @@ export class MealController {
 
   @Delete(':id')
   @Roles('admins')
-  @ApiResponse({ status: 200, description: 'The meal has been successfully deleted.' })
+  @ApiResponse({
+    status: 200,
+    description: 'The meal has been successfully deleted.',
+  })
   @ApiResponse({ status: 403, description: 'Forbidden.' })
   remove(@Param('id') id: string) {
     return this.service.remove(id);
