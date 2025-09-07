@@ -32,7 +32,7 @@ Objection.js models for all required entities are located in `src/infrastructure
 
 ### 3. Domain Entities and Repository Abstractions
 
-The project defines its core domain entities in `src/domain/entities`. These are plain classes that represent the core business objects of the application, such as `Order`, `Meal`, and `User`. They are decoupled from any specific database implementation.
+The project defines its core domain entities in `src/domain/entities`. These are interfaces that represent the core business objects of the application, such as `Order`, `Meal`, and `User`. They are decoupled from any specific database implementation.
 
 To maintain this separation, repository interfaces (ports) are defined in `src/domain/repositories`. These interfaces define the contract for data access operations, such as `findById` or `save`. The concrete implementations of these repositories are located in `src/infrastructure/objection/repositories`, which use Objection.js to interact with the database. This approach allows the application's core logic to remain independent of the data access layer.
 
@@ -112,6 +112,10 @@ WebSockets would provide real-time updates to clients. The **Saga pattern** woul
 - **Global Exception Filter**: A global exception filter is implemented in `src/common/filters/http-exception.filter.ts` and registered in `main.ts` to ensure consistent error handling.
 - **Authorization**: The `@Roles()` decorator and `RolesGuard` provide a mechanism for endpoint authorization, as seen in the `OrderController`.
 - **Efficient Queries**: The repository pattern is used, which is the correct place to implement efficient queries using Objection.js features like `withGraphFetched` or `joinEager` to prevent issues like the N+1 query problem.
+
+## API Documentation
+
+The project uses Swagger to provide API documentation. Once the application is running, you can access the Swagger UI at [http://localhost:3000/api](http://localhost:3000/api).
 
 ## Getting Started
 
