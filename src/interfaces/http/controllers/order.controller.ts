@@ -22,6 +22,7 @@ import { createOrderSchema } from '../dto/orders/joi-schema';
 import { CreateOrderDto } from '../dto/orders/create-order.dto';
 import { UpdateOrderDto } from '../dto/orders/update-order.dto';
 import { OrderOwnershipGuard } from '../../../common/auth/order-ownership.guard';
+import { OrderEntity } from 'src/domain/entities/order.entity';
 
 @Controller('orders')
 export class OrderController {
@@ -59,7 +60,7 @@ export class OrderController {
   @ApiResponse({ status: 200, description: 'The found order record' })
   @ApiResponse({ status: 404, description: 'Order not found.' })
   findById(@Req() req: Request) {
-    return req.order;
+    return req.order as OrderEntity;
   }
 
   @Put(':id')
